@@ -1,0 +1,274 @@
+\input texinfo   @c -*-texinfo-*-
+@c process with  makeinfo laser_stimulation.texinfo --html
+@c %**start of header
+@setfilename laser_stimulation.info
+@settitle laser_stimulation manual 0.2
+@c %**end of header
+
+@copying
+Copyright @copyright{} 2011 Kevin Allen
+
+@quotation
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.2 or
+any later version published by the Free Software Foundation; with no
+Invariant Sections, with the Front-Cover Texts being ``laser_stimulation manual''.
+@end quotation
+@end copying
+
+@titlepage
+@title laser_stimulation manual
+@author Kevin Allen
+
+@c The following two commands start the copyright page.
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+@headings off
+  
+@c Output the table of contents at the beginning.
+@contents
+
+@ifnottex
+@node Top
+@top laser_stimulation manual
+
+@insertcopying
+@end ifnottex
+
+This is the manual for laser_stimulation acquisition program.
+
+@menu
+* Introduction::
+* Installation::
+* Usage::
+* Code::
+* Troubleshooting::
+* Reporting bugs::
+* Index::
+@end menu
+
+@node Introduction
+@chapter Introduction
+@cindex chapter, first
+        @section Purpose
+        laser_stimulation is a program to control a laser source during optogenetic experiments on Gnu/Linux systems. It can stimulate at a given frequency or use brain activity to trigger laser stimulation.
+        @section How it works
+        laser_stimulation is written in C and depends on two other C projects. One are the comedi drivers and the other is the fftw3 library. All the code in laser_stimulation is free. 
+         @section Possible hardware configurations
+         laser_stimulation was written to work with National Instruments boards. We used these boards because we were already familiar with them. laser_stimulation was tested with computers equipped with a NI PCI-6259 (32 channels) or one NI PCI-6251 (16 channels).
+         @section Usage
+         laser_stimulation is called from the shell terminal.
+
+@node Installation
+@chapter Installation
+@cindex chapter, second
+        Possibly the most complex task you face if you want to use laser_stimulation is to install the prerequisites. It could involve compiling and installing a linux kernel, along with a few other packages. The instructions below aim at making these steps as simple as possible. This process went smoothly the last few times we have tried it.
+
+        @section Computer and analog-to-digital cards
+        First, you need a computer. The more channels and the higher the sampling rate you want to use, the faster the computer needs to be. laser_stimulation was written to take advantage of multi-core processors (see Code section of manual). A processor with 4 cores should give you optimal results. You would also benefit from a computer with a decent graphic card to display the oscilloscope. Make sure there are Linux drivers available for you graphic card. We have been developping laser_stimulation with a Dell OptiPlex 780-Desktop equipped with an Intel Core i7 processor. With this machine, the acquisition and recording of 64 channels at 20 kHz takes less than 5% of the processor time (as measured with the @code{top} command). The oscilloscope is the processor intensive part of laser_stimulation. The processor usage of the oscilloscope depends on the settings and the type of signal being displayed.
+
+        laser_stimulation uses the comedi drivers to interact with the acquisition cards. You can have a look at the comedi website to know which acquisition cards are supported. If you want to record from only one board, you can probably pick any card that is supported and that fits your requirements. Because we want to record from 64 channels, we need to work with two cards simultaneously.  We opted for 2 NI PCI-6259 cards. These cards support RTSI (Real Time System Integration) bus. This is used to synchronize the two cards. You need a bus cable to connect the RTSI of the two cards. The cable can be ordered from National Instruments. Note that the method to synchronize two cards varies depending on which cards you are using. So if you want to use laser_stimulation with more than one card without changing the code, better stick to the PCI-6259.
+
+        @section Gnu/Linux operating system
+        Once you have the computer equipped with the card(s), you need to install a recent Gnu/Linux operating system. This usually involves burning a DVD and rebooting your system from the DVD. We are using the 64-bit version of Fedora 17.
+
+        @section Building a new vanilla kernel
+        Because the linux kernel coming with Fedora is heavily modified, we need to compile and install a vanilla kernel on the computer to be able to use the comedi drivers. The configuration of the kernel is key to good acquisition performance. When laser_stimulation acquires data from many channels at high sampling rates, large amounts of data accumulate quickly in the driver buffers and laser_stimulation must empty this buffer regularly to avoid buffer overflow, which results in loss of data. Long delays between reading the driver buffer can be caused by other processes running on the computer. To avoid this situation, steps can be taken to ensure that laser_stimulation regularly empty the data from the driver buffer.
+        There are several solutions available. One is to enable the option ``Preemptible Kernel `` in the kernel option. This should reduce significantly the low latency responses of the computer. Another solution is to install the real-time patch to the vanilla kernel (see https://rt.wiki.kernel.org/index.php/Main_Page). This creates a kernel with very low latencies. We are developping laser_stimulation with the preemtive option found in the kernel version 2.6.37. Here are the steps to install that kernel.
+
+        @enumerate
+        @item
+        As a normal user, download the vanilla kernel from www.kernel.org and save the compressed file in your home directory. 
+        
+        @code{cd ; wget http://www.kernel.org/pub/linux/kernel/v2.6/linux-2.6.37.tar.bz2}
+       
+        @item
+        Extract the file
+     
+       @code{tar -jxvf linux-2.6.37.tar.bz2}
+
+        @item
+        Move in the new folder (eg, linux-2.6.38.9) and copy the .config file from the existing kernel. That config file should be suitable for the computer architecture and hardware you are currently using. 
+   
+        @code{cd linux-2.6.37 ;  cp /boot/config-2.6.38.6-48.fc14.x86_64 .config}
+        
+        @item
+        Use the .config as the default for the new kernel options.
+ 
+        @code{make oldconfig}
+        
+        Answer yes (y) or m to most questions if you are not sure. This command will update the .config file so that it is compatible with the new kernel. You might have to install ncurses-devel to run make oldconfig.
+     
+        @item 
+        Add the pre-emptive option in the kernel. Navigate in the menu of menuconfig, go in processor type and features, Preemption Model, set it to Preemptible Kernel (Low-Latency Desktop). You might have to install ncurses-devel to run make menuconfig.
+        
+        @code{make menuconfig}
+        @item
+        Compile the kernel.
+
+        @code{make} or @code{make -j 8} if you can run many processes in parallel.
+
+        @item
+        Install the new kernel. You need to be root to do that.
+
+        @code{make modules_install}
+       
+        @code{make install}
+
+        @item
+        Check that the grub configuration file has been updated by looking at @code{/boot/grub/grub.config}.   You should see an entry for you kernel. You can change the title of the new kernel so that it can be easily identified. You can also set your new kernel as the default kernel.
+
+        @code{emacs /boot/grub/grub.config}
+
+
+        @item
+        Reboot the computer and try to boot using the new kernel.
+
+        @code{shutdown -r now}
+
+        @item
+        Run uname -a to know which kernel is presently running. If it is your new kernel, it means that you have sucessfully installed the new kernel.
+
+        @code{uname -a}
+
+        @item
+        As root, make a symbolic link called linux in the /usr/src directory to the source directory of the new kernel. That will be used when installing comedi.
+
+        @code{ln -s ~/linux-2.6.37 /usr/src/linux}
+
+        @end enumerate
+
+        @section comedi and comedilib on Fedora 14
+     
+        @enumerate
+        @item
+        Download the current comedi drivers from the git repositories. You might need to install git.
+
+        @code{git clone git://comedi.org/git/comedi/comedi.git}
+
+        @code{git clone git://comedi.org/git/comedi/comedilib.git}
+
+        @item
+        Go in the comedi directory and install the package. You might need to install autoconf and automake first.
+       
+        @code{cd comedi; ./autogen.sh; ./configure; make}
+
+        As root @code{cd comedi;make install; depmod -a}
+        
+        @item
+        Restart your computer. If the cards are installed in the computer, files like @code{/dev/comedi0} should be created.
+
+        @item 
+        Install comedilib with yum
+
+        @code{yum install comedilib-devel}
+
+        @item
+        Configure your comedi devices. See http://www.comedi.org/doc/x333.html
+
+        During our latest installation, this step was done automatically when rebooting.
+              
+        If it is not the case, this is what you have to do with a two NI PCI-6259 card setup. 
+        @code{comedi_config /dev/comedi0 ni_pcimio}
+        @code{comedi_config /dev/comedi1 ni_pcimio}
+
+        You might want to have permission to write and read on the files /dev/comedi0 and /dev/comedi1. This will allow you to run laser_stimulation as a normal user. To make that process automated on Fedora:
+
+        Add the following code to /etc/rc.d/rc.local 
+
+        @code{chown user_name /dev/comedi0;chgrp group_name /dev/comedi0;chown user_name /dev/comedi1;chgrp group_name /dev/comedi1} to /etc/rc.d/rc.local
+
+        
+       @end enumerate
+
+
+        @section gtk+
+        To be able to compile laser_stimulation, you also need the gtk+2 development kit.
+
+        @code{yum install gtk2-devel}
+        
+        @section Installing laser_stimulation
+        @enumerate
+        @item
+        To get the latest development code, get the source from the CVS repository. You might have to install cvs on you computer if it is not there. Then just run the following command.
+
+        @code{cvs -z3 -d:pserver:anonymous@@cvs.savannah.nongnu.org:/sources/laser_stimulation co laser_stimulation}
+        @item
+        Alternatively, you can download the latest freeze version from http://download.savannah.gnu.org/releases/laser_stimulation/
+        
+        @item
+        Then you can configure, compile and install laser_stimulation the traditional way.
+
+        @code{cd laser_stimulation/laser_stimulation;./autogen.sh;./configure; make; su -; make install}
+       @end enumerate 
+
+         If everything worked, you should have laser_stimulation installed on the computer.
+
+@node Usage
+@chapter Usage
+@cindex chapter, third
+        @section Graphical user interface
+     @subsection Preferences
+      In the graphical user interface, the configuration is accessible from the edit menu. 
+     @subsubsection Acquisition preferences
+     The acquisition dialog does not allow you to adjust any setting at the moment but it displays the current AD cards and drivers used. You can see how many channels are available from the detected cards and the current sampling rate.
+     @subsubsection Recording preferences
+     You can select the channels that you want to record in that page. Only channels with a check mark will be recorded.
+     @subsubsection Oscilloscope preferences
+      The oscilloscope has 10 groups of channels to display. The channels within a group are displayed together in the oscilloscope. Up to 16 channels can be part of a single group. You can change the channel selection for each group in the oscilloscope preferences dialog. You can drag and drop channels within groups to change their order. Changes to the oscilloscope have no effect on the recording process. Therefore, you can display channels that are not recorded or vice versa.
+     @subsection Recording
+     Pressing the red recording button will start recording. The button will remain pressed, which indicates you that laser_stimulation is recording. A second click on this same button will stop recording. During recording, a message is displayed on the status bar at the button of the main window. You can use this message to know if recording is in process. By default, the data are saved in your home directory. The recording directory can be changed in the recording preferences dialog. You can change the name of the file at the bottom right of the main window. The file index increases by 1 automatically when the recording is stopped.
+     @subsection Oscilloscope
+     The oscilloscope shows the raw data. You can control it via the toolbar at the bottom left of the main window. Pressing the play button will start the oscilloscope and a second click on the button will stop the oscilloscope. The oscilloscope is entirely independent from recording. This means that you can start and stop the oscilloscope without affecting the recording process. The oscilloscope has a buffer containing the recently displayed data. Therefore, you can at any time stop the oscilloscope and rewind it to see the previously shown signals. You can navigate backward or forward in the buffer using the buttons surrounding the play button.
+
+     @section Controling laser_stimulation from a remote computer
+     The X Window System running on Linux allows you to run a graphical application remotely from a different computer. Therefore, you can easily run laser_stimulation on a computer located in the lab and get the oscilloscope forwarded to your office computer. This is usually done with the command @code{ssh -l username -X 192.168.1.2}. The numbers there are the ip address of the computer running laser_stimulation. Then, just type @code{laser_stimulation}. How cool is that?
+     
+     @section Terminal mode
+     laser_stimulation can also record data without the graphical user interface. That can be useful if you want to run it from a shell script for example. Run @code{laser_stimulation --terminal config_file}. @code{config_file} is a file telling laser_stimulation what to do. It contain one entry per line. The first line is the name of the file in which the data will be recorded. The second line is the  sampling rate in Hz. The third line is the lenth of the recording in seconds. Each following line is a channel you want to record. The first channel is channel 0.
+
+
+     
+@node Code
+@chapter Code
+@cindex chapter, fourth
+        This section of the manual is only for those interested into learning how laser_stimulation works at the code level. That might be good to read that if you want to play a bit with the code.
+
+        laser_stimulation can run up to 3 threads. The main thread, which always runs, responds to the user input, draw the oscilloscope, and manages 2 other processing threads. Given that the interactions between the 3 processing threads are limited to copying a buffer with the raw data, many operations can occurs in parallel in the different threads without problem. Another advantage is that heavy processing of the data in the displaying thread is unlikely to block the acquisition thread and cause buffer overflow. Ideally, poor performance in the displaying thread should only impairs the display and not interfere with acquisition and recording of the data.
+
+        The user can start either the oscilloscope or the recording process. Either of these actions will start the acquisition thread. The recording and displaying processes are independent of each other. You can use the oscilloscope without recording or recording without the oscilloscope. Playing with the oscilloscope should not affect the recording.
+
+        @section Acquisition thread
+        This thread is responsible for fetching the data from the AD devices and to making the new data available to the rest of the program. It is therefore running whenever the recording or oscilloscope is running. There are two main structures used in the acquisition thread. One represents each individual device that are installed on the computer. The other is a comedi_interface which controls and syncrhonyzes the individual devices. The acquired data are available in the data_buffer of the comedi_interface structure. To avoid inconsistencies due to operations by multiple threads upon the same memory area performed at the same time or to prevent race conditions, this is the only memory chunck that is shared between the three processing threads. Moreover, when one thread read or write in that data_buffer, the other threads are prevented from reading or writing in it and must wait.
+        @section Recording thread
+        The recording thread gets the acquired data from the comedi_interface and copies the data needed into a recording_buffer. When enough data has accumulated into the recording_buffer, a call to the API @code{write()} is performed to save the data on a hard drive. Only the channels selected in the preference dialog box will be saved.
+         @section Displaying thread (main thread)
+         This thread gets the raw data from the acquisition buffer and reformat it so that is can be displayed on the screen. The data are drawn on a gtk drawing area using cairo. The oscilloscope also saves newly acquired data in a buffer so that the user can go back and have a look at recently acquired data.
+
+
+@node Troubleshooting
+@chapter Troubleshooting
+@cindex chapter, fifth
+        This section of the manual is to guide users when they encounter problems with laser_stimulation.
+
+        @section laser_stimulation fails to start
+
+        @subsection look at the error message
+        Try to start laser_stimulation from a terminal and look at what is printed on the screen. It will most likely point to what is not working. 
+             @subsection @code{/dev/comedi0} or @code{/dev/comedi1} is missing
+              If you use only one card, there should be only @code{/dev/comedi0} there but if you have two cards, you should find @code{/dev/comedi0} and @code{/dev/comedi1}. If they are missing, this suggests that comedi drivers were not loaded or install properly. One possibility is that the computer has rebooted with a different kernel that does not load comedi drivers. You can know which kernel you are running by typing @code{uname -a}.  A wrong kernel can booted if the Gnu/Linux distribution has done an automatic update and installed a new kernel as the default kernel. 
+              @subsection user does not have read and write permissions on @code{/dev/comedi0} or @code{/dev/comedi1}
+         By default, when the computer reboot the owner of these files will be set to root.  You need to give read and write permission to the current user on these files. Try @code{su -; chown myusername /dev/comedi0}. The best is to run a shell script that sets the right permission automatically when the computer boots, as shown in the installation section.
+       
+@node Reporting bugs
+@chapter Reporting bugs
+@cindex chapter, sixth
+        The formal way to report a bug or other annoyance found in laser_stimulation is via the savannah site: http://savannah.nongnu.org/projects/laser_stimulation/. There you can click on Bugs/submit. Other means of communication (email, phone, etc.) are also possible.
+
+
+@node Index
+@unnumbered Index
+@printindex cp
+@bye

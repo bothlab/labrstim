@@ -1,0 +1,19 @@
+to install laser_stimulation
+
+tar -xzf laser_stimulation-0.1.tar.gz
+cd laser_stimulation
+./configure
+make all
+su -
+make install
+
+
+Reported bugs to be fixed:
+
+-error closing device before closing
+-sometime problems at begining with getting data from device
+
+To do:
+
+-change variable names for the one used only for theta stimulation
+-implement nanosleep when we are just before perfect stimulation phase to increase precision
