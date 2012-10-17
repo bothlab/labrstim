@@ -69,7 +69,7 @@ int comedi_interface_init(struct comedi_interface* com)
       // try a second device.. this could be a loop to accomodate more than 2 devices.
       if ((comedi_dev_init(&com->dev[1],"/dev/comedi1"))==0)
 	{
-	  	  
+	  
 	  // check if the two devices have the same drivers  
 	  if((strcmp(com->dev[0].driver,com->dev[1].driver) !=0))
 	    {
@@ -105,7 +105,6 @@ int comedi_interface_init(struct comedi_interface* com)
   fprintf(stderr,"comedi_interface_init, number_channels: %d\n",com->number_channels);
   fprintf(stderr,"comedi_interface_init, com->buffer_size: %d  com->max_number_samples_in_buffer:%d\n",com->buffer_size,com->max_number_samples_in_buffer);
 #endif
-  
   return 0;
 }
 

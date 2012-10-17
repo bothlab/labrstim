@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
   int with_x_opt=0;
   int with_y_opt=0;
   int with_C_opt=0;
-
+  int with_d_opt=0;
   // variables to store values passed with options
   double stimulation_theta_phase=90;
   double train_frequency_hz=6;
@@ -53,6 +53,7 @@ int main(int argc, char *argv[])
   int channels_in_dat_file=32;
   int offline_channel=0;
   int swr_offline_reference=1;
+  int device_index_for_stimulation=DEVICE_INDEX_FOR_STIMULATION;
   // to get the options
   int opt; 
   int i;
@@ -75,10 +76,11 @@ int main(int argc, char *argv[])
 	  {"offline_channel", required_argument,0,'x'},
 	  {"swr_offline_reference", required_argument,0,'y'},
 	  {"swr_convolution_peak_threshold", required_argument,0,'C'},
+	  {"output_device_for_stimulation", required_argument,0,'d'},
 	  {0, 0, 0, 0}
 	};
       int option_index = 0;
-      opt = getopt_long (argc, argv, "x:y:c:o:s:hvt:T:Rm:M:C:",
+      opt = getopt_long (argc, argv, "x:y:c:o:s:hvt:T:Rm:M:C:d:",
 		       long_options, &option_index);
       
       /* Detect the end of the options. */
@@ -167,6 +169,12 @@ int main(int argc, char *argv[])
 	  {
 	    with_C_opt=1;
 	    swr_convolution_peak_threshold=atof(optarg);
+	    break;
+	  }	  
+	case  'd':
+	  {
+	    with_d_opt=1;
+	    device_index_for_stimulation=atoi(optarg);
 	    break;
 	  }	  
 	case '?':
@@ -402,9 +410,18 @@ int main(int argc, char *argv[])
 	  return 1;
 	}
     }
+  if(with_d_opt)
+    {
+      if(device_index_for_stimulation<0)
+	{
+	  fprintf(stderr,"%s: device_index_for_stimulation should not be negative but is %d.\n", prog_name,device_index_for_stimulation);
+	  return 1;
+	}
+    }
   
   /***********************************************
       declare the program as a reat time program 
+      the user will need to be root to do this
   *************************************************/
   if (with_o_opt==0) // don't do it if you work offline
     {
@@ -456,32 +473,32 @@ int main(int argc, char *argv[])
       comedi_interface_set_sampled_channels(&comedi_inter,0, NUMBER_SAMPLED_CHANNEL_DEVICE_0,channel_list);
       
       // make sure there is a valid analog output subdevice on the acquisition card
-      if(comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].subdevice_analog_output==-1)
+      if(comedi_inter.dev[device_index_for_stimulation].subdevice_analog_output==-1)
 	{
-	  fprintf(stderr,"%s: there is no valid analog output subdevice on the device\n",prog_name);
+	  fprintf(stderr,"%s: there is no valid analog output subdevice on device %d\n",prog_name,device_index_for_stimulation);
 	  return 1;
 	}
       // make sure we have at least 2 channels for analog output: intensity and pulse of laser
-      if (comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].number_channels_analog_output<2)
+      if (comedi_inter.dev[device_index_for_stimulation].number_channels_analog_output<2)
 	{
 	  fprintf(stderr, "%s: subdevice_analog_output has less than 2 channels\n",prog_name);
 	  return 1;
 	}
       // check if laser intensity is outside of range for the analog output subdevice
-      if (comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].voltage_max_output<laser_intensity_volt)
+      if (comedi_inter.dev[device_index_for_stimulation].voltage_max_output<laser_intensity_volt)
 	{
 	  fprintf(stderr, "%s: subdevice_analog_output max voltage is smaller than laser intensity\n",prog_name);
 	  return 1;
 	}
       // check if laser pulse is outside of range for the analog output subdevice
-      if (comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].voltage_max_output<pulse_volt)
+      if (comedi_inter.dev[device_index_for_stimulation].voltage_max_output<pulse_volt)
 	{
 	  fprintf(stderr, "%s: subdevice_analog_output max voltage is smaller than laser pulse\n",prog_name);
 	  return 1;
 	}
       if(with_s_opt==1)
 	{
-	  if(comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].number_channels_analog_input<2)
+	  if(comedi_inter.dev[device_index_for_stimulation].number_channels_analog_input<2)
 	    {
 	      fprintf(stderr, "%s: number of analog input channels should be at least 2 to do swr stimulation\n",prog_name);
 	      return 1;
@@ -490,29 +507,29 @@ int main(int argc, char *argv[])
       
       // get the value for the laser intensity and pulse
       comedi_baseline=comedi_from_phys(baseline_volt,
-				       comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].range_output_array[comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].range_output],
-				       comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].maxdata_output);
+				       comedi_inter.dev[device_index_for_stimulation].range_output_array[comedi_inter.dev[device_index_for_stimulation].range_output],
+				       comedi_inter.dev[device_index_for_stimulation].maxdata_output);
       comedi_intensity=comedi_from_phys(laser_intensity_volt,
-					comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].range_output_array[comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].range_output],
-					comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].maxdata_output);
+					comedi_inter.dev[device_index_for_stimulation].range_output_array[comedi_inter.dev[device_index_for_stimulation].range_output],
+					comedi_inter.dev[device_index_for_stimulation].maxdata_output);
       comedi_pulse=comedi_from_phys(pulse_volt,
-				    comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].range_output_array[comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].range_output],
-				    comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].maxdata_output);
+				    comedi_inter.dev[device_index_for_stimulation].range_output_array[comedi_inter.dev[device_index_for_stimulation].range_output],
+				    comedi_inter.dev[device_index_for_stimulation].maxdata_output);
       
       // set the intensity channel
-      comedi_data_write(comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].comedi_dev,
-			comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].subdevice_analog_output, 
+      comedi_data_write(comedi_inter.dev[device_index_for_stimulation].comedi_dev,
+			comedi_inter.dev[device_index_for_stimulation].subdevice_analog_output, 
 			CHANNEL_FOR_LASER_INTENSITY,
-			comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].range_output,
-			comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].aref,
+			comedi_inter.dev[device_index_for_stimulation].range_output,
+			comedi_inter.dev[device_index_for_stimulation].aref,
 			comedi_intensity);
 
       // set the pulse channel to baseline
-      comedi_data_write(comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].comedi_dev,
-			comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].subdevice_analog_output,
+      comedi_data_write(comedi_inter.dev[device_index_for_stimulation].comedi_dev,
+			comedi_inter.dev[device_index_for_stimulation].subdevice_analog_output,
 			CHANNEL_FOR_PULSE,
-			comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].range_output,
-			comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].aref,
+			comedi_inter.dev[device_index_for_stimulation].range_output,
+			comedi_inter.dev[device_index_for_stimulation].aref,
 			comedi_baseline);
 
     }
@@ -571,21 +588,21 @@ int main(int argc, char *argv[])
 	{
 	  clock_gettime(CLOCK_REALTIME,&tk.time_last_stimulation); 
 	  // start the pulse
-	  comedi_data_write(comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].comedi_dev,
-			    comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].subdevice_analog_output,
+	  comedi_data_write(comedi_inter.dev[device_index_for_stimulation].comedi_dev,
+			    comedi_inter.dev[device_index_for_stimulation].subdevice_analog_output,
 			    CHANNEL_FOR_PULSE,
 			    0,
-			    comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].aref,
+			    comedi_inter.dev[device_index_for_stimulation].aref,
 			    comedi_pulse);
 	  // wait
 	  nanosleep(&tk.duration_pulse,&tk.req);
 	  
 	  // end of the pulse
-	  comedi_data_write(comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].comedi_dev,
-			    comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].subdevice_analog_output,
+	  comedi_data_write(comedi_inter.dev[device_index_for_stimulation].comedi_dev,
+			    comedi_inter.dev[device_index_for_stimulation].subdevice_analog_output,
 			    CHANNEL_FOR_PULSE,
 			    0,
-			    comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].aref,
+			    comedi_inter.dev[device_index_for_stimulation].aref,
 			    comedi_baseline);
 	  
 	 // get time now and the actual pulse duration
@@ -764,21 +781,21 @@ int main(int argc, char *argv[])
 			  clock_gettime(CLOCK_REALTIME,&tk.time_last_stimulation); 
 						  
 			  // start the pulse
-			  comedi_data_write(comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].comedi_dev,
-					    comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].subdevice_analog_output,
+			  comedi_data_write(comedi_inter.dev[device_index_for_stimulation].comedi_dev,
+					    comedi_inter.dev[device_index_for_stimulation].subdevice_analog_output,
 					    CHANNEL_FOR_PULSE,
 					    0,
-					    comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].aref,
+					    comedi_inter.dev[device_index_for_stimulation].aref,
 					    comedi_pulse);
 			  // wait
 			  nanosleep(&tk.duration_pulse,&tk.req);
 			  
 			  // end of the pulse
-			  comedi_data_write(comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].comedi_dev,
-					    comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].subdevice_analog_output,
+			  comedi_data_write(comedi_inter.dev[device_index_for_stimulation].comedi_dev,
+					    comedi_inter.dev[device_index_for_stimulation].subdevice_analog_output,
 					    CHANNEL_FOR_PULSE,
 					    0,
-					    comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].aref,
+					    comedi_inter.dev[device_index_for_stimulation].aref,
 					    comedi_baseline);
 #ifdef DEBUG_THETA
 			  fprintf(stderr,"interval from last stimulation: %ld (us)\n",tk.elapsed_last_stimulation.tv_nsec/1000);
@@ -976,21 +993,21 @@ int main(int argc, char *argv[])
 		  if(with_o_opt==0) // not working with a data file
 		    {
 		      // start the pulse
-		      comedi_data_write(comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].comedi_dev,
-					comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].subdevice_analog_output,
+		      comedi_data_write(comedi_inter.dev[device_index_for_stimulation].comedi_dev,
+					comedi_inter.dev[device_index_for_stimulation].subdevice_analog_output,
 					CHANNEL_FOR_PULSE,
 					0,
-					comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].aref,
+					comedi_inter.dev[device_index_for_stimulation].aref,
 					comedi_pulse);
 		      // wait
 		      nanosleep(&tk.duration_pulse,&tk.req);
 		      
 		      // end of the pulse
-		      comedi_data_write(comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].comedi_dev,
-					comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].subdevice_analog_output,
+		      comedi_data_write(comedi_inter.dev[device_index_for_stimulation].comedi_dev,
+					comedi_inter.dev[device_index_for_stimulation].subdevice_analog_output,
 					CHANNEL_FOR_PULSE,
 					0,
-					comedi_inter.dev[DEVICE_INDEX_FOR_STIMULATION].aref,
+					comedi_inter.dev[device_index_for_stimulation].aref,
 					comedi_baseline);
 		    }
 		  if(with_o_opt==1) // working with data file
@@ -1065,6 +1082,8 @@ void print_options()
   printf("--channels_in_dat_file <number> or -c\t: give the number of channels in the dat file. Use only when working offline from a dat file (-o or --offline)\n");
   printf("--offline_channel <number> or -x\t: give the channel on which swr detection is done when working offline from a dat file (-o and -s)\n");
   printf("--swr_offline_reference <number> or -y\t: give the reference channel for swr detection when working offline from a dat file (-o and -s)\n");
+  printf("--swr_convolution_peak_threshold <number> or -C\t: give an additional treshold for swr detection\n");
+  printf("--output_device_for_stimulation <number> or -d\t: give the comedi device to use\n");
   printf("--version or -v\t\t\t\t: print the program version\n");
   printf("--help or -h\t\t\t\t: will print this text\n");
   return;
