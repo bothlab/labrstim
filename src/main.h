@@ -299,6 +299,8 @@ struct time_keeper
   double inter_pulse_duration_ms; // for the train stimulation
   struct timespec inter_pulse_duration; // for train stimulation
   double end_to_start_pulse_ms; // for the train stimulation
+  struct timespec swr_delay;
+  double swr_delay_ms;
   struct timespec end_to_start_pulse_duration;
   struct timespec time_now;
   struct timespec time_beginning_trial;

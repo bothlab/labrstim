@@ -42,6 +42,7 @@ int main(int argc, char *argv[])
   int with_y_opt=0;
   int with_C_opt=0;
   int with_d_opt=0;
+  int with_D_opt=0;
   // variables to store values passed with options
   double stimulation_theta_phase=90;
   double train_frequency_hz=6;
@@ -77,11 +78,12 @@ int main(int argc, char *argv[])
 	  {"swr_offline_reference", required_argument,0,'y'},
 	  {"swr_convolution_peak_threshold", required_argument,0,'C'},
 	  {"output_device_for_stimulation", required_argument,0,'d'},
+	  {"delay_swr", no_argument,0,'D'},
 	  {0, 0, 0, 0}
 	};
       int option_index = 0;
-      opt = getopt_long (argc, argv, "x:y:c:o:s:hvt:T:Rm:M:C:d:",
-		       long_options, &option_index);
+      opt = getopt_long (argc, argv, "x:y:c:o:s:hvt:T:Rm:M:C:d:D",
+			 long_options, &option_index);
       
       /* Detect the end of the options. */
       if (opt == -1)
@@ -177,6 +179,11 @@ int main(int argc, char *argv[])
 	    device_index_for_stimulation=atoi(optarg);
 	    break;
 	  }	  
+	case 'D':
+	  {
+	    with_D_opt=1;
+	    break;
+	  }
 	case '?':
 	  /* getopt_long already printed an error message. */
 	  //	  break;
@@ -326,7 +333,7 @@ int main(int argc, char *argv[])
       fprintf(stderr,"%s: stimulation phase should be from 0 to 360\nYou gave %lf\n",prog_name,stimulation_theta_phase);
       return 1;
     }
-  if(with_R_opt==1)
+  if(with_R_opt==1 || with_D_opt==1)
     {
       if(minimum_interval_ms >= maximum_interval_ms)
 	{
@@ -992,6 +999,17 @@ int main(int argc, char *argv[])
 		  clock_gettime(CLOCK_REALTIME,&tk.time_last_stimulation); 
 		  if(with_o_opt==0) // not working with a data file
 		    {
+
+		      // do we need a delay before swr stimulation
+		      if(with_D_opt)
+			{
+			  tk.swr_delay_ms=minimum_interval_ms+(rand() % (int)(maximum_interval_ms-minimum_interval_ms));
+			  tk.swr_delay=set_timespec_from_ms(tk.swr_delay_ms);
+			  fprintf(stderr,"swr delay: %lf ms\n",tk.swr_delay_ms);
+			  // sleep until the next pulse, note that this will overshoot by the time of 1 lines of code! (almost nothing)
+			  nanosleep(&tk.swr_delay,&tk.req);
+			}
+		    
 		      // start the pulse
 		      comedi_data_write(comedi_inter.dev[device_index_for_stimulation].comedi_dev,
 					comedi_inter.dev[device_index_for_stimulation].subdevice_analog_output,
@@ -1032,9 +1050,9 @@ int main(int argc, char *argv[])
 	  tk.time_previous_new_data=tk.time_last_acquired_data;
 	  fprintf(stderr,"1check no: %ld, last_sample_no: %ld  sleep time: %.2lf (us), processing time: %.2lf, diff_between_two_get_data: %.2lf power: %.2lf threshold: %.2lf convolution_peak: %.2lf\n",counter++,last_sample_no, tk.duration_sleep_between_swr_processing.tv_nsec/1000.0, tk.elapsed_from_acquisition.tv_nsec/1000.0,tk.duration_previous_current_new_data.tv_nsec/1000.0,swr_power,swr_power_threshold,swr_convolution_peak);
 #endif
-	}
+	} // stimulation trial is over
+      
       fftw_interface_swr_free(&fftw_inter_swr);
-
       if(with_o_opt==0)
 	{
 	  if(comedi_interface_stop_acquisition(&comedi_inter)==-1)
@@ -1076,14 +1094,15 @@ void print_options()
   printf("--swr_convolution_peak_threshold <convolution_threshold> of -C\t\t: give the detection threshold (z score) as option argument\n");
   printf("--train <frequency_hz> or -T\t\t:  train of stimulations at a fix frequency\n");
   printf("--random or -R \t\t\t\t: train of stimulations with random intervals, use with -m and -M\n");
-  printf("--minimum_interval_ms <min_ms> or -m\t: set minimum interval for stimulation at random intervals (-R)\n");
-  printf("--maximum_interval_ms <max_ms> or -M\t: set maximum interval for stimulation at random intervals (-R)\n");
+  printf("--minimum_interval_ms <min_ms> or -m\t: set minimum interval for stimulation at random intervals (-R) or swr delay (-s -D)\n");
+  printf("--maximum_interval_ms <max_ms> or -M\t: set maximum interval for stimulation at random intervals (-R) or swr delay (-s -D)\n");
   printf("--offline <dat_file_name> or -o\t\t: use a .dat file as input data. You also need option -c, together with either -s or -t, to work with -o\n");
   printf("--channels_in_dat_file <number> or -c\t: give the number of channels in the dat file. Use only when working offline from a dat file (-o or --offline)\n");
   printf("--offline_channel <number> or -x\t: give the channel on which swr detection is done when working offline from a dat file (-o and -s)\n");
   printf("--swr_offline_reference <number> or -y\t: give the reference channel for swr detection when working offline from a dat file (-o and -s)\n");
   printf("--swr_convolution_peak_threshold <number> or -C\t: give an additional treshold for swr detection\n");
   printf("--output_device_for_stimulation <number> or -d\t: give the comedi device to use\n");
+  printf("--delay_swr or -D\t: add a delay between swr detection and beginning of stimulation. Use -m and -M to set minimum and maximum delay\n");
   printf("--version or -v\t\t\t\t: print the program version\n");
   printf("--help or -h\t\t\t\t: will print this text\n");
   return;

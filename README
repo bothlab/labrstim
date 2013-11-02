@@ -1,7 +1,11 @@
-to install laser_stimulation
+Program to do laser stimulation. Can either be used in a closed-loop set up or to do train stimulation.
 
-tar -xzf laser_stimulation-0.1.tar.gz
+
+To install. 
+
+git clone https://kevin_allen@bitbucket.org/kevin_allen/laser_stimulation.git
 cd laser_stimulation
+automake --add-missing
 ./configure
 make all
 su -
