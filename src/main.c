@@ -43,6 +43,7 @@ int main(int argc, char *argv[])
   int with_C_opt=0;
   int with_d_opt=0;
   int with_D_opt=0;
+  int with_f_opt=0;
   // variables to store values passed with options
   double stimulation_theta_phase=90;
   double train_frequency_hz=6;
@@ -50,6 +51,7 @@ int main(int argc, char *argv[])
   double maximum_interval_ms=200;
   double swr_power_threshold; // as a z score
   double swr_convolution_peak_threshold=0.5; // as a z score
+  double swr_refractory=0;
   char * dat_file_name;
   int channels_in_dat_file=32;
   int offline_channel=0;
@@ -79,10 +81,11 @@ int main(int argc, char *argv[])
 	  {"swr_convolution_peak_threshold", required_argument,0,'C'},
 	  {"output_device_for_stimulation", required_argument,0,'d'},
 	  {"delay_swr", no_argument,0,'D'},
+	  {"swr_refractory", required_argument,0,'f'},
 	  {0, 0, 0, 0}
 	};
       int option_index = 0;
-      opt = getopt_long (argc, argv, "x:y:c:o:s:hvt:T:Rm:M:C:d:D",
+      opt = getopt_long (argc, argv, "x:y:c:o:s:hvt:T:Rm:M:C:d:Df:",
 			 long_options, &option_index);
       
       /* Detect the end of the options. */
@@ -184,6 +187,13 @@ int main(int argc, char *argv[])
 	    with_D_opt=1;
 	    break;
 	  }
+	case  'f':
+	  {
+	    swr_refractory=atof(optarg);
+	    with_f_opt=1;
+	    break;
+	  }	  
+
 	case '?':
 	  /* getopt_long already printed an error message. */
 	  //	  break;
@@ -354,6 +364,14 @@ int main(int argc, char *argv[])
 	  return 1;
 	}
     }
+  if(with_s_opt)
+    {
+      if(swr_refractory<0)
+	{
+	  fprintf(stderr,"%s: swr_refractory should be larger or equal to 0\n. You gave %lf\n", prog_name, swr_refractory);
+	  return 1;
+	}
+    }
   if(with_o_opt==1)
     {
       // we then need -c
@@ -383,6 +401,11 @@ int main(int argc, char *argv[])
 	      fprintf(stderr,"%s: option -o used with -t requires the use of -x.\n", prog_name);
 	      return 1;
 	    }
+	}
+      if(with_f_opt==1)
+	{
+	  fprintf(stderr,"%s: option -f should not be used with -o.\n", prog_name);
+	  return 1;
 	}
     }
   if(with_c_opt)
@@ -883,7 +906,7 @@ int main(int argc, char *argv[])
       clock_gettime(CLOCK_REALTIME, &tk.time_now);
       clock_gettime(CLOCK_REALTIME, &tk.time_last_stimulation);
       tk.elapsed_beginning_trial=diff(&tk.time_beginning_trial,&tk.time_now);
-      
+      tk.duration_refractory_period=set_timespec_from_ms(swr_refractory); // set the refractory period for stimulation
       
       // loop until the time is over
 #ifdef DEBUG_SWR
@@ -984,7 +1007,12 @@ int main(int argc, char *argv[])
 	      // get the peak in the convoluted signal
 	      swr_convolution_peak=fftw_interface_swr_get_convolution_peak(&fftw_inter_swr);
 	      
-	      if(swr_power>swr_power_threshold && swr_convolution_peak > swr_convolution_peak_threshold)
+	      // get the current time for refractory period
+	      clock_gettime(CLOCK_REALTIME,&tk.time_now);
+	      tk.elapsed_last_stimulation=diff(&tk.time_last_stimulation,&tk.time_now);
+
+	      if(swr_power>swr_power_threshold && swr_convolution_peak > swr_convolution_peak_threshold && // if power is large enough and refractory over
+		 tk.elapsed_last_stimulation.tv_nsec>tk.duration_refractory_period.tv_nsec || tk.elapsed_last_stimulation.tv_sec>tk.duration_refractory_period.tv_sec )
 		{
 #ifdef DEBUG_SWR
 		  printf("%ld\n",last_sample_no);
@@ -996,10 +1024,8 @@ int main(int argc, char *argv[])
 		  return 1;
 #endif
 		  // stimulation time!!
-		  clock_gettime(CLOCK_REALTIME,&tk.time_last_stimulation); 
 		  if(with_o_opt==0) // not working with a data file
 		    {
-
 		      // do we need a delay before swr stimulation
 		      if(with_D_opt)
 			{
@@ -1027,6 +1053,8 @@ int main(int argc, char *argv[])
 					0,
 					comedi_inter.dev[device_index_for_stimulation].aref,
 					comedi_baseline);
+		      // get the time of last stimulation
+		      clock_gettime(CLOCK_REALTIME, &tk.time_last_stimulation);
 		    }
 		  if(with_o_opt==1) // working with data file
 		    {
@@ -1103,6 +1131,7 @@ void print_options()
   printf("--swr_convolution_peak_threshold <number> or -C\t: give an additional treshold for swr detection\n");
   printf("--output_device_for_stimulation <number> or -d\t: give the comedi device to use\n");
   printf("--delay_swr or -D\t: add a delay between swr detection and beginning of stimulation. Use -m and -M to set minimum and maximum delay\n");
+  printf("--swr_refractory <ms> or -f\t: add a refractory period in ms between end of last swr stimulation and beginning of next one\n");
   printf("--version or -v\t\t\t\t: print the program version\n");
   printf("--help or -h\t\t\t\t: will print this text\n");
   return;
