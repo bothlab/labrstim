@@ -1011,8 +1011,8 @@ int main(int argc, char *argv[])
 	      clock_gettime(CLOCK_REALTIME,&tk.time_now);
 	      tk.elapsed_last_stimulation=diff(&tk.time_last_stimulation,&tk.time_now);
 
-	      if(swr_power>swr_power_threshold && swr_convolution_peak > swr_convolution_peak_threshold && // if power is large enough and refractory over
-		 tk.elapsed_last_stimulation.tv_nsec>tk.duration_refractory_period.tv_nsec || tk.elapsed_last_stimulation.tv_sec>tk.duration_refractory_period.tv_sec )
+	      if((swr_power>swr_power_threshold && swr_convolution_peak > swr_convolution_peak_threshold) && // if power is large enough and refractory over
+		 (tk.elapsed_last_stimulation.tv_nsec>tk.duration_refractory_period.tv_nsec || tk.elapsed_last_stimulation.tv_sec>tk.duration_refractory_period.tv_sec))
 		{
 #ifdef DEBUG_SWR
 		  printf("%ld\n",last_sample_no);
