@@ -5,9 +5,9 @@ To install.
 
 git clone https://kevin_allen@bitbucket.org/kevin_allen/laser_stimulation.git
 cd laser_stimulation
-automake --add-missing
+./autogen.sh
 ./configure
-make all
+make
 su -
 make install
 
