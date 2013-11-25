@@ -480,7 +480,6 @@ int main(int argc, char *argv[])
       memset(&dummy, 0, MAX_SAFE_STACK);
     }
 
-  printf("hey %lf\n",ttl_amplitude_volt);
   
   /*********************************************************
      code to initialize the AD card drivers and our interface
