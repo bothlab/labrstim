@@ -52,6 +52,7 @@ int main(int argc, char *argv[])
   double swr_power_threshold; // as a z score
   double swr_convolution_peak_threshold=0.5; // as a z score
   double swr_refractory=0;
+  double ttl_amplitude_volt=3;// for ttl pulse
   char * dat_file_name;
   int channels_in_dat_file=32;
   int offline_channel=0;
@@ -82,10 +83,11 @@ int main(int argc, char *argv[])
 	  {"output_device_for_stimulation", required_argument,0,'d'},
 	  {"delay_swr", no_argument,0,'D'},
 	  {"swr_refractory", required_argument,0,'f'},
+	  {"ttl_amplitude_volt", required_argument,0,'a'},
 	  {0, 0, 0, 0}
 	};
       int option_index = 0;
-      opt = getopt_long (argc, argv, "x:y:c:o:s:hvt:T:Rm:M:C:d:Df:",
+      opt = getopt_long (argc, argv, "a:x:y:c:o:s:hvt:T:Rm:M:C:d:Df:",
 			 long_options, &option_index);
       
       /* Detect the end of the options. */
@@ -193,7 +195,11 @@ int main(int argc, char *argv[])
 	    with_f_opt=1;
 	    break;
 	  }	  
-
+	case  'a':
+	  {
+	    ttl_amplitude_volt=atof(optarg);
+	    break;
+	  }	  
 	case '?':
 	  /* getopt_long already printed an error message. */
 	  //	  break;
@@ -239,7 +245,7 @@ int main(int argc, char *argv[])
   // variables read from arguments
   double laser_intensity_volt; // for laser power
   double baseline_volt=0; // for ttl pulse
-  double pulse_volt=3;// for ttl pulse
+
 
   // same as above variables, but in comedi value instead of volts
   lsampl_t comedi_intensity =0;
@@ -473,7 +479,9 @@ int main(int argc, char *argv[])
       unsigned char dummy[MAX_SAFE_STACK];
       memset(&dummy, 0, MAX_SAFE_STACK);
     }
-      
+
+  printf("hey %lf\n",ttl_amplitude_volt);
+  
   /*********************************************************
      code to initialize the AD card drivers and our interface
   **********************************************************/
@@ -521,9 +529,14 @@ int main(int argc, char *argv[])
 	  return 1;
 	}
       // check if laser pulse is outside of range for the analog output subdevice
-      if (comedi_inter.dev[device_index_for_stimulation].voltage_max_output<pulse_volt)
+      if (comedi_inter.dev[device_index_for_stimulation].voltage_max_output<ttl_amplitude_volt)
 	{
-	  fprintf(stderr, "%s: subdevice_analog_output max voltage is smaller than laser pulse\n",prog_name);
+	  fprintf(stderr, "%s: subdevice_analog_output max voltage is smaller than ttl_amplitude_volt (%lf)\n",prog_name,ttl_amplitude_volt);
+	  return 1;
+	}
+      if(ttl_amplitude_volt<0)
+	{
+	  fprintf(stderr, "%s: ttl_amplitude_volt should be at least 0 Volt but is %lf\n",prog_name,ttl_amplitude_volt);
 	  return 1;
 	}
       if(with_s_opt==1)
@@ -542,7 +555,7 @@ int main(int argc, char *argv[])
       comedi_intensity=comedi_from_phys(laser_intensity_volt,
 					comedi_inter.dev[device_index_for_stimulation].range_output_array[comedi_inter.dev[device_index_for_stimulation].range_output],
 					comedi_inter.dev[device_index_for_stimulation].maxdata_output);
-      comedi_pulse=comedi_from_phys(pulse_volt,
+      comedi_pulse=comedi_from_phys(ttl_amplitude_volt,
 				    comedi_inter.dev[device_index_for_stimulation].range_output_array[comedi_inter.dev[device_index_for_stimulation].range_output],
 				    comedi_inter.dev[device_index_for_stimulation].maxdata_output);
       
@@ -1132,6 +1145,7 @@ void print_options()
   printf("--output_device_for_stimulation <number> or -d\t: give the comedi device to use\n");
   printf("--delay_swr or -D\t: add a delay between swr detection and beginning of stimulation. Use -m and -M to set minimum and maximum delay\n");
   printf("--swr_refractory <ms> or -f\t: add a refractory period in ms between end of last swr stimulation and beginning of next one\n");
+  printf("--ttl_amplitude_volt <V> or -a\t: give the amplitude of the ttl pulse in volt\n");
   printf("--version or -v\t\t\t\t: print the program version\n");
   printf("--help or -h\t\t\t\t: will print this text\n");
   return;
