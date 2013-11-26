@@ -334,9 +334,9 @@ int main(int argc, char *argv[])
       fprintf(stderr,"%s: trial duration should be between 0 and 10000 sec\nYou gave %lf\n",prog_name,tk.trial_duration_sec);
       return 1;
     }
-  if(tk.pulse_duration_ms <0 || tk.pulse_duration_ms >1000)
+  if(tk.pulse_duration_ms <0 || tk.pulse_duration_ms >10000)
     {
-      fprintf(stderr,"%s: pulse_duration_ms should be between 0 and 1000 ms\nYou gave %lf\n",prog_name,tk.pulse_duration_ms);
+      fprintf(stderr,"%s: pulse_duration_ms should be between 0 and 10000 ms\nYou gave %lf\n",prog_name,tk.pulse_duration_ms);
       return 1;
     }
   if(laser_intensity_volt<=0 || laser_intensity_volt>4)
