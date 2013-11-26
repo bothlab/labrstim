@@ -44,6 +44,8 @@ int main(int argc, char *argv[])
   int with_d_opt=0;
   int with_D_opt=0;
   int with_f_opt=0;
+  int with_m_opt=0;
+  int with_M_opt=0;
   // variables to store values passed with options
   double stimulation_theta_phase=90;
   double train_frequency_hz=6;
@@ -134,11 +136,13 @@ int main(int argc, char *argv[])
 	  }
 	case  'm':
 	  {
+	    with_m_opt=1;
 	    minimum_interval_ms=atof(optarg);
 	    break;
 	  }	  
 	case  'M':
 	  {
+	    with_M_opt=1;
 	    maximum_interval_ms=atof(optarg);
 	    break;
 	  }	  
@@ -323,12 +327,16 @@ int main(int argc, char *argv[])
       fprintf(stderr,"%s: can't run with both -R and -s options\n",prog_name);
       return 1;
     }
+  if(with_R_opt==1&&(with_m_opt==0||with_M_opt==0))
+    {
+      fprintf(stderr,"%s: you need to set -m and -M if you use -R option\n",prog_name);
+      return 1;    
+    }
   if(with_s_opt==1&&with_T_opt==1)
     {
       fprintf(stderr,"%s: can't run with both -T and -s options\n",prog_name);
       return 1;
     }
-
   if (tk.trial_duration_sec<=0 || tk.trial_duration_sec > 10000)
     {
       fprintf(stderr,"%s: trial duration should be between 0 and 10000 sec\nYou gave %lf\n",prog_name,tk.trial_duration_sec);
