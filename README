@@ -3,7 +3,7 @@ Program to do laser stimulation. Can either be used in a closed-loop set up or t
 
 To install. 
 
-git clone https://kevin_allen@bitbucket.org/kevin_allen/laser_stimulation.git
+git clone https://github.com/kevin-allen/laser_stimulation.git
 cd laser_stimulation
 ./autogen.sh
 ./configure
