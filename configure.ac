@@ -11,11 +11,13 @@ AC_PROG_CC
 AM_PROG_CC_STDC
 AM_PROG_CC_C_O
 AC_PROG_INSTALL 
+
 AC_SEARCH_LIBS([pthread_create],[pthread])
 AC_SEARCH_LIBS([clock_gettime],[rt])
 AC_SEARCH_LIBS([sqrt],[m])
-AC_SEARCH_LIBS([fftw_execute],[fftw3]) # not working
-AC_SEARCH_LIBS([comedi_open],[libcomedi]) # not working
+PKG_CHECK_MODULES([COMEDI], [comedilib])
+PKG_CHECK_MODULES([FFTW3], [fftw3])
+
 AC_CHECK_HEADERS(stdlib.h string.h sys/time.h unistd.h comedi.h comedilib.h fftw3.h)
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([clock_gettime])
