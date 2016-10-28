@@ -2,3 +2,6 @@
 #mesondefine PACKAGE_NAME
 #mesondefine PACKAGE_VERSION
 #mesondefine PACKAGE_COPYRIGHT
+
+#mesondefine USE_COMEDI
+#mesondefine USE_MCPADV

@@ -26,15 +26,8 @@
 
 #include "fftw-functions.h"
 #include "data-file-si.h"
-#include "comedi-intf.h"
 #include "timespec-utils.h"
-
-/***************************************************
-functions run at by the thread starter
-the thread is killed when function exits
-body of the function is in comedi_code.c
-***************************************************/
-void *acquisition(void* thread_id);
+#include "bri/comedi-intf.h"
 
 void print_options();
 int main(int argc, char *argv[])
@@ -595,7 +588,6 @@ int main(int argc, char *argv[])
 			comedi_inter.dev[device_index_for_stimulation].range_output,
 			comedi_inter.dev[device_index_for_stimulation].aref,
 			comedi_baseline);
-
     }
   
   

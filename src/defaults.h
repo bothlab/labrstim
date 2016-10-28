@@ -21,17 +21,7 @@
 #ifndef __LS_DEFAULTS_H
 #define __LS_DEFAULTS_H
 
-// defines for the comedi interface or comedi device
-#define COMEDI_DEVICE_MAX_CHANNELS 64 // could be higher without too much trouble, this is per device
-#define COMEDI_INTERFACE_MAX_DEVICES 1 // will only use the first comedi device (/dev/comedi0)
-#define NSEC_PER_SEC (1000000000) // The number of nsecs per sec
-#define MAX_BUFFER_LENGTH 120000 // buffer length for each comedi_dev
-#define COMEDI_INTERFACE_TO_DEVICE_BUFFER_SIZE_RATIO 10 // size of comedi interface buffer, set according to device buffer size
 #define DEFAULT_SAMPLING_RATE 20048 // of the device
-#define MAX_SAMPLING_RATE 48000 // maximum allowed sampling rate
-#define COMEDI_INTERFACE_ACQUISITION_SLEEP_TIME_MS 1 // if too high could lead to buffer overflow
-// #define DEBUG_ACQ
-
 
 //#define DEBUG_FFTW_INTER
 
@@ -47,7 +37,6 @@
 #define MAX_FREQUENCY_DELTA 4
 #define MAX_PHASE_DIFFERENCE 10
 #define SLEEP_WHEN_NO_NEW_DATA_MS 0.2
-#define NUMBER_SAMPLED_CHANNEL_DEVICE_0 64
 //#define DEBUG_THETA
 
 

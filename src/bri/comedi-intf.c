@@ -26,7 +26,21 @@
 #include <math.h>
 #include <unistd.h>
 
-#include "timespec-utils.h"
+#include "../timespec-utils.h"
+
+/* mutex to prevent thread to read from a buffer that is being modified
+ all parts of code reading or writing to comedi_inter.buffer_data should
+ be surrounded by
+ pthread_mutex_lock( &mutex1 ); and   pthread_mutex_unlock( &mutex1 );
+ this is a global variable for now
+*/
+pthread_mutex_t mutex_comedi_interface_buffer;
+
+int comedi_interface_get_data_from_devices();
+int comedi_interface_clear_current_acquisition_variables();
+int comedi_interface_print_info(struct comedi_interface* com);
+void * acquisition(void* comedi_inter); // thread that does the acquisition, the comedi interface needs to be passed to this function
+
 
 int comedi_interface_init(struct comedi_interface* com)
 {

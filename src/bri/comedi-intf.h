@@ -25,7 +25,17 @@
 #include <comedilib.h>
 #include <pthread.h>
 
-#include "defaults.h"
+#include "../defaults.h"
+
+// defines for the comedi interface or comedi device
+#define COMEDI_DEVICE_MAX_CHANNELS 64 // could be higher without too much trouble, this is per device
+#define COMEDI_INTERFACE_MAX_DEVICES 1 // will only use the first comedi device (/dev/comedi0)
+#define NSEC_PER_SEC (1000000000) // The number of nsecs per sec
+#define MAX_BUFFER_LENGTH 120000 // buffer length for each comedi_dev
+#define COMEDI_INTERFACE_TO_DEVICE_BUFFER_SIZE_RATIO 10 // size of comedi interface buffer, set according to device buffer size
+#define MAX_SAMPLING_RATE 48000 // maximum allowed sampling rate
+#define COMEDI_INTERFACE_ACQUISITION_SLEEP_TIME_MS 1 // if too high could lead to buffer overflow
+// #define DEBUG_ACQ
 
 /**
  * comedi_dev:
@@ -76,7 +86,6 @@ struct comedi_dev
     int is_acquiring;
 };
 
-
 /**
  * comedi_interface:
  *
@@ -120,38 +129,22 @@ struct comedi_interface
     struct timespec req;
 };
 
-/* mutex to prevent thread to read from a buffer that is being modified
- all parts of code reading or writing to comedi_inter.buffer_data should
- be surrounded by
- pthread_mutex_lock( &mutex1 ); and   pthread_mutex_unlock( &mutex1 );
- this is a global variable for now
-*/
-pthread_mutex_t mutex_comedi_interface_buffer;
-
 int comedi_interface_init(); // get the information on the AD cards installed
 int comedi_interface_free(struct comedi_interface* com);
-int comedi_interface_set_channel_list();
-int comedi_interface_build_command();
-int comedi_interface_run_command();
-int comedi_interface_stop_command();
-int comedi_interface_get_data_from_devices();
-int comedi_interface_clear_current_acquisition_variables();
-int comedi_interface_start_acquisition(struct comedi_interface* com);
-int comedi_interface_stop_acquisition(struct comedi_interface* com);
-int comedi_interface_set_sampling_rate (struct comedi_interface* com,
-                                        int sampling_rate);
 int comedi_interface_set_inter_acquisition_sleeping_time(struct comedi_interface* com,
                                                          double ms);
+int comedi_interface_set_channel_list();
 int comedi_interface_set_sampled_channels(struct comedi_interface* com,
                                           int dev_no,
                                           int number_channels_to_sample,
                                           int* list);
-int comedi_interface_print_info(struct comedi_interface* com);
+int comedi_interface_start_acquisition(struct comedi_interface* com);
 long int comedi_interface_get_last_data_one_channel(struct comedi_interface* com,
                                                     int channel_no,
                                                     int number_samples,
                                                     double* data,
                                                     struct timespec* time_acquisition);
+int comedi_interface_stop_acquisition(struct comedi_interface* com);
 long int comedi_interface_get_last_data_two_channels(struct comedi_interface* com,
                                                      int channel_no_1,
                                                      int channel_no_2,
@@ -159,16 +152,25 @@ long int comedi_interface_get_last_data_two_channels(struct comedi_interface* co
                                                      double* data_1,
                                                      double* data_2,
                                                      struct timespec* time_acquisition);
+
 int comedi_dev_init(struct comedi_dev *dev,
                     char* file_name);
 int comedi_dev_free(struct comedi_dev *dev);
 int comedi_dev_read_data(struct comedi_dev *dev);
-int comedi_dev_adjust_data_point_out_of_samples(struct comedi_dev *dev,
-                                                int number_samples_transfered_to_inter_buffer);
-int comedi_dev_clear_current_acquisition_variables(struct comedi_dev *dev);
+int comedi_interface_set_sampling_rate (struct comedi_interface* com,
+                                        int sampling_rate);
+int comedi_interface_build_command();
+int comedi_interface_run_command();
+int comedi_interface_stop_command();
+
 int comedi_t_enable_master(comedi_t *dev);
 int comedi_t_enable_slave(comedi_t *dev);
+
+int comedi_dev_adjust_data_point_out_of_samples(struct comedi_dev *dev,
+                                                int number_samples_transfered_to_inter_buffer);
+
+int comedi_dev_clear_current_acquisition_variables(struct comedi_dev *dev);
+
 int comedi_device_print_info(struct comedi_dev* dev);
-void * acquisition(void* comedi_inter); // thread that does the acquisition, the comedi interface needs to be passed to this function
 
 #endif /* __LS_COMEDI_INTF_H */
