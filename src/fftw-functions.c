@@ -19,7 +19,13 @@ along with laser_stimulation.  If not, see <http://www.gnu.org/licenses/>.
 date 15.02.2010
 ************************************************************************/
 
-#include "main.h"
+#include "fftw-functions.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+#include "defaults.h"
 
 int fftw_interface_theta_init(struct fftw_interface_theta* fftw_int)
 {
@@ -731,4 +737,6 @@ int make_wavelet_for_convolution(int sampling_rate,
       data[i+size/2]=wavelet[i];
     }
   free(wavelet);
+
+  return 0;
 }

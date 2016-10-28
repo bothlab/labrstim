@@ -1,0 +1,4 @@
+
+#mesondefine PACKAGE_NAME
+#mesondefine PACKAGE_VERSION
+#mesondefine PACKAGE_COPYRIGHT

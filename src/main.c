@@ -1,24 +1,40 @@
-/****************************************************************
-Copyright (C) 2011 Kevin Allen
+/*
+ * Copyright (C) 2011 Kevin Allen
+ *
+ * Licensed under the GNU General Public License Version 3
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the license, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
-This file is part of laser_stimulation
+#include "config.h"
+#include <math.h>
+#include <stdlib.h>
+#include <getopt.h>
+#include <sys/mman.h>
+#include <string.h>
 
-laser_stimulation is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+#include "fftw-functions.h"
+#include "data-file-si.h"
+#include "comedi-intf.h"
+#include "timespec-utils.h"
 
-laser_stimulation is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with laser_stimulation.  If not, see <http://www.gnu.org/licenses/>.
-
-date 15.02.2010
-************************************************************************/
-#include "main.h"
+/***************************************************
+functions run at by the thread starter
+the thread is killed when function exits
+body of the function is in comedi_code.c
+***************************************************/
+void *acquisition(void* thread_id);
 
 void print_options();
 int main(int argc, char *argv[])
@@ -26,7 +42,6 @@ int main(int argc, char *argv[])
   char * prog_name=PACKAGE_NAME; // defined in config.h
   char * version=PACKAGE_VERSION;
   char * copyright_notice=PACKAGE_COPYRIGHT;
-  char * package_bugreport=PACKAGE_BUGREPORT;
   int non_opt_arguments; // given by user
   int num_arg_needed=3; // required by program
   // flag for each option
@@ -226,7 +241,6 @@ int main(int argc, char *argv[])
       printf("Usage for %s is \n", prog_name);
       printf("%s trial_duration_sec pulse_duration_ms laser_intensity_volts\n",prog_name);
       print_options();
-      printf("report bugs at %s\n",package_bugreport);
       return 0;
     }
 
