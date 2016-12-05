@@ -17,9 +17,4 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LS_MCPADV_INTF_H
-#define __LS_MCPADV_INTF_H
-
-
-
-#endif /* __LS_MCPADV_INTF_H */
+#include "max1133-intf.h"

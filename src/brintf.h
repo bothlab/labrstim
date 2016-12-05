@@ -20,7 +20,7 @@
 #ifndef __LS_BRINTF_H
 #define __LS_BRINTF_H
 
-void bri_setup (void);
+void bri_initialize (void);
 
 void bri_get_data ();
 

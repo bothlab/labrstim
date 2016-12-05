@@ -4,4 +4,4 @@
 #mesondefine PACKAGE_COPYRIGHT
 
 #mesondefine USE_COMEDI
-#mesondefine USE_MCPADV
+#mesondefine USE_MAX1133

@@ -1,1 +1,0 @@
-option('daq_stim_intf', type : 'combo', choices : ['comedi', 'mcpadv'], value : 'comedi')
