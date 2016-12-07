@@ -18,11 +18,15 @@ labrstim_src = [
     'src/data-file-si.h',
     'src/data-file-si.c',
     'src/timespec-utils.h',
-    'src/timespec-utils.c'
-]
-
-bri_max1133_src = ['src/max1133-intf.h',
-                   'src/max1133-intf.c'
+    'src/timespec-utils.c',
+    'src/tasks.h',
+    'src/tasks.c',
+    'src/max1133daq.h',
+    'src/max1133daq.c',
+    'src/gpio.h',
+    'src/gpio.c',
+    'src/stimpulse.h',
+    'src/stimpulse.c'
 ]
 
 #
@@ -54,6 +58,6 @@ configure_file(input: 'config.h.in',
 # Targets
 #
 executable('labrstim',
-           [labrstim_src, bri_max1133_src],
+           [labrstim_src],
            dependencies: [fftw3_dep, thread_dep, glib_dep]
 )

@@ -17,9 +17,29 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LS_ANASTIM_H
-#define __LS_ANASTIM_H
+#ifndef __LS_MAX1133_DAQ_H
+#define __LS_MAX1133_DAQ_H
+
+#include <glib.h>
+#include <stdint.h>
+
+typedef struct
+{
+    struct _DataRingBuffer *rb;
+    pthread_t tid;
+    volatile gboolean running;
+
+    int spi_fd;
+} Max1133Daq;
+
+Max1133Daq      *max1133daq_new (const gchar *spi_device);
+void            max1133daq_free (Max1133Daq *daq);
+
+gboolean        max1133daq_start (Max1133Daq *daq);
+gboolean        max1133daq_stop (Max1133Daq *daq);
+gboolean        max1133daq_is_running (Max1133Daq *daq);
+
+gboolean        max1133daq_get_data (Max1133Daq *daq, uint16_t *data);
 
 
-
-#endif /* __LS_ANASTIM_H */
+#endif /* __LS_MAX1133_DAQ_H */

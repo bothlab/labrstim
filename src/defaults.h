@@ -65,7 +65,7 @@
 #define BRAIN_CHANNEL_2 1 // analog input channel for reference signal for swr stimulation
 
 /// for the real time process
-#define MY_PRIORITY (49) /* we use 49 as the PRREMPT_RT use 50
+#define MY_PRIORITY 49 /* we use 49 as the PRREMPT_RT use 50
                             as the priority of kernel tasklets
                             and interrupt handler by default */
 #define MAX_SAFE_STACK (8*1024) /* The maximum stack size which is
@@ -74,5 +74,7 @@
 #define NSEC_PER_SEC    (1000000000) /* The number of nsecs per sec. */
 
 #define NANOSLEEP_OVERSHOOT 0.0080000
+
+#define DEFAULT_DAQ_SPI_DEVICE "/dev/spidev1.0"
 
 #endif /* __LS_DEFAULTS_H */

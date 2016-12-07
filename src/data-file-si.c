@@ -28,7 +28,7 @@
 
 #define MAXBLOCKSIZE 50000000 // 50MB to work with many files at same time
 
-int init_data_file_si(struct data_file_si *df,const char *file_name, int num_channels)
+int init_data_file_si(data_file_si *df,const char *file_name, int num_channels)
 {
   /*function to initialise the data_file_si structure so that it can
    read a .dat file.
@@ -93,7 +93,7 @@ int init_data_file_si(struct data_file_si *df,const char *file_name, int num_cha
     }
   return 0;
 }
-int clean_data_file_si(struct data_file_si *df)
+int clean_data_file_si(data_file_si *df)
 {
   /* function to free memory and close a .dat file after reading it.
    */
@@ -112,7 +112,7 @@ int clean_data_file_si(struct data_file_si *df)
     }
   return 0;
 }
-int data_file_si_load_block(struct data_file_si* df, long int start_index, long int size)
+int data_file_si_load_block(data_file_si *df, long int start_index, long int size)
 {
   /* Function to read a data_block.
      Store the data in data_block member of the data_file_si structure
@@ -147,7 +147,7 @@ int data_file_si_load_block(struct data_file_si* df, long int start_index, long 
     }
   return 0;
 }
-int data_file_si_get_data_one_channel(struct data_file_si* df, int channel_no, short int* one_channel, long int start_index, long int end_index)
+int data_file_si_get_data_one_channel(data_file_si* df, int channel_no, short int* one_channel, long int start_index, long int end_index)
 {
   /*function to read the data from one channel
     the index as parameters are in sample number
@@ -229,7 +229,7 @@ int data_file_si_get_data_one_channel(struct data_file_si* df, int channel_no, s
     }
   return 0;
 }
-int data_file_si_get_data_all_channels(struct data_file_si* df, short int* data, long int start_index, long int end_index)
+int data_file_si_get_data_all_channels(data_file_si *df, short int* data, long int start_index, long int end_index)
 {
   /*function to read the data from one channel
     the index as parameters are in sample number
@@ -298,7 +298,7 @@ int data_file_si_get_data_all_channels(struct data_file_si* df, short int* data,
     }
   return 0;
 }
-int data_file_si_cut_data_file(struct data_file_si* df, char* new_file_name,long int start_index, long int end_index)
+int data_file_si_cut_data_file(data_file_si *df, char* new_file_name,long int start_index, long int end_index)
 {
   // function to make a dat file shorter
   // same as data_file_si_get_data_all_channels but will save data in a file instead of reading

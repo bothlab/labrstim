@@ -17,9 +17,48 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LS_MAX1133_INTF_H
-#define __LS_MAX1133_INTF_H
+#include "stimpulse.h"
 
+#include <glib.h>
 
+#include "gpio.h"
 
-#endif /* __LS_MAX1133_INTF_H */
+/**
+ * stimpulse_init_gpio:
+ */
+void
+stimpulse_gpio_init (void)
+{
+    gpio_export (GPIO_PIN_INTENSITY);
+    gpio_export (GPIO_PIN_TRIGGER);
+
+    gpio_set_direction (GPIO_PIN_INTENSITY, GPIO_OUT);
+    gpio_set_direction (GPIO_PIN_TRIGGER, GPIO_OUT);
+}
+
+/**
+ * stimpulse_set_intensity:
+ */
+void
+stimpulse_set_intensity (int value)
+{
+    gpio_write (GPIO_PIN_INTENSITY, value);
+}
+
+/**
+ * stimpulse_set_trigger_high:
+ */
+void
+stimpulse_set_trigger_high (void)
+{
+    gpio_write (GPIO_PIN_TRIGGER, GPIO_HIGH);
+}
+
+/**
+ * stimpulse_set_trigger_low:
+ */
+void
+stimpulse_set_trigger_low (void)
+{
+    gpio_write (GPIO_PIN_TRIGGER, GPIO_LOW);
+}

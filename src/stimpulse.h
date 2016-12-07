@@ -1,6 +1,5 @@
 /*
  * Copyright (C) 2016 Matthias Klumpp <matthias@tenstral.net>
- * Copyright (C) 2011 Kevin Allen
  *
  * Licensed under the GNU General Public License Version 3
  *
@@ -18,4 +17,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "anastim.h"
+#ifndef __LS_STIMPULSE_H
+#define __LS_STIMPULSE_H
+
+#include <glib.h>
+#include <stdint.h>
+
+#define GPIO_PIN_INTENSITY 31
+#define GPIO_PIN_TRIGGER 32
+
+void            stimpulse_gpio_init (void);
+
+void            stimpulse_set_intensity (int value);
+
+void            stimpulse_set_trigger_high (void);
+void            stimpulse_set_trigger_low (void);
+
+#endif /* __LS_STIMPULSE_H */

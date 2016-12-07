@@ -24,11 +24,11 @@
 #include <time.h>
 
 /**
- * time_keeper:
+ * TimeKeeper:
  *
  * structure to hold the variables to do the time keeping
  */
-struct time_keeper
+typedef struct
 {
     // timespec variables store time with high accuracy
     // time_ = time point
@@ -68,7 +68,7 @@ struct time_keeper
 
     struct timespec req;
     // double nano_comp_ms=NANOSLEEP_OVERSHOOT;
-};
+} TimeKeeper;
 
 struct timespec set_timespec_from_ms(double milisec);
 struct timespec diff(struct timespec* start, struct timespec* end);
