@@ -39,7 +39,8 @@ gboolean        max1133daq_start (Max1133Daq *daq);
 gboolean        max1133daq_stop (Max1133Daq *daq);
 gboolean        max1133daq_is_running (Max1133Daq *daq);
 
-gboolean        max1133daq_get_data (Max1133Daq *daq, uint16_t *data);
+gboolean        max1133daq_get_data (Max1133Daq *daq,
+                                     int16_t *data);
 
 
 #endif /* __LS_MAX1133_DAQ_H */

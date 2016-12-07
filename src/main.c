@@ -185,21 +185,14 @@ main (int argc, char *argv[])
         return 1;
     }
 
-
     // variables read from arguments
     double laser_intensity_volt;  // for laser power
     double baseline_volt = 0;     // for ttl pulse
 
-    double theta_frequency = (MIN_FREQUENCY_THETA + MAX_FREQUENCY_THETA) / 2;
-    double theta_degree_duration_ms = (1000 / theta_frequency) / 360;
-    double theta_delta_ratio;
-
     // list of channels to scan, bluff, we will sample the same channel many times
     int channel_list[NUMBER_SAMPLED_CHANNEL_DEVICE_0];
     long int last_sample_no = 0;
-    double current_phase = 0;
-    double phase_diff;
-    double max_phase_diff = MAX_PHASE_DIFFERENCE;
+
     double swr_power = 0;
     double swr_convolution_peak = 0;
 
@@ -403,10 +396,12 @@ main (int argc, char *argv[])
 
     /* Do the theta stimulation */
     if (opt_cmd_theta) {
-        perform_theta_stimulation (trial_duration_sec,
+        perform_theta_stimulation (opt_random,
+                                   trial_duration_sec,
                                    pulse_duration_ms,
-                                   opt_random,
-                                   &data_file);
+                                   opt_stimulation_theta_phase,
+                                   opt_dat_file_name,
+                                   opt_offline_channel);
         return 0;
     }
 
@@ -415,7 +410,7 @@ main (int argc, char *argv[])
     if (opt_cmd_swr) {
         perform_swr_stimulation (trial_duration_sec,
                                  pulse_duration_ms,
-                                 &data_file);
+                                 NULL);
         return 0;
     }
 

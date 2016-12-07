@@ -36,7 +36,9 @@ gboolean
 perform_theta_stimulation (gboolean random,
                            double trial_duration_sec,
                            double pulse_duration_ms,
-                           data_file_si *offline_data_file);
+                           double stimulation_theta_phase,
+                           const gchar *offline_data_file,
+                           int offline_channel);
 
 gboolean
 perform_swr_stimulation (double trial_duration_sec,

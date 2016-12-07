@@ -35,6 +35,7 @@ labrstim_src = [
 fftw3_dep  = dependency('fftw3')
 thread_dep = dependency('threads')
 glib_dep = dependency('glib-2.0')
+math_lib = compiler.find_library('m')
 
 if not compiler.has_header('linux/spi/spidev.h')
     error('Unable to find "spidev.h" header. Are you running Linux with SPI enabled and headers installed?')
@@ -59,5 +60,8 @@ configure_file(input: 'config.h.in',
 #
 executable('labrstim',
            [labrstim_src],
-           dependencies: [fftw3_dep, thread_dep, glib_dep]
+           dependencies: [fftw3_dep,
+                          thread_dep,
+                          glib_dep,
+                          math_lib]
 )

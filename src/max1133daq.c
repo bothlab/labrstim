@@ -114,7 +114,7 @@ rb_push_data (DataRingBuffer *rb, const int16_t value)
  * rb_pull_data:
  */
 static gboolean
-rb_pull_data (DataRingBuffer *rb, uint16_t *data)
+rb_pull_data (DataRingBuffer *rb, int16_t *data)
 {
     if (rb->rd_pos >= rb->capacity) {
         /* we reached the end of our buffer slice, start from the beginning */
@@ -217,7 +217,7 @@ max1133daq_new (const gchar *spi_device)
     Max1133Daq *daq;
 
     daq = g_slice_new0 (Max1133Daq);
-    rb_init (daq->rb, 2048);
+    rb_init (daq->rb, 4096);
 
     daq->spi_fd = open (spi_device, O_RDWR);
 
@@ -289,7 +289,7 @@ max1133daq_is_running (Max1133Daq *daq)
  * max1133daq_get_data:
  */
 gboolean
-max1133daq_get_data (Max1133Daq *daq, uint16_t *data)
+max1133daq_get_data (Max1133Daq *daq, int16_t *data)
 {
     return rb_pull_data (daq->rb, data);
 }

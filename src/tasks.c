@@ -132,11 +132,28 @@ perform_train_stimulation (gboolean random, double trial_duration_sec, double pu
  * Do the theta stimulation.
  */
 gboolean
-perform_theta_stimulation (gboolean random, double trial_duration_sec, double pulse_duration_ms, const gchar *offline_data_file)
+perform_theta_stimulation (gboolean random, double trial_duration_sec, double pulse_duration_ms,
+                           double stimulation_theta_phase, const gchar *offline_data_file, int offline_channel)
 {
     TimeKeeper tk;
     Max1133Daq *daq;
-    data_file_si data_file;        // data_file_short_integer
+    size_t data_slice_pos = 0;
+
+    /* variables to work offline from a dat file */
+    int new_samples_per_read_operation = 60; //  3 ms of data
+    data_file_si data_file;
+    short int* data_from_file;
+    short int* ref_from_file;
+
+    double theta_frequency = (MIN_FREQUENCY_THETA + MAX_FREQUENCY_THETA) / 2;
+    double theta_degree_duration_ms = (1000 / theta_frequency) / 360;
+    double theta_delta_ratio;
+
+    double current_phase = 0;
+    double phase_diff;
+
+    double max_phase_diff = MAX_PHASE_DIFFERENCE;
+
 
     tk.trial_duration_sec = trial_duration_sec;
     tk.pulse_duration_ms = pulse_duration_ms;
@@ -194,6 +211,9 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
     tk.elapsed_beginning_trial =
         diff (&tk.time_beginning_trial, &tk.time_now);
 
+    /* initialize the stimulation GPIO pins */
+    stimpulse_gpio_init ();
+
 #ifdef DEBUG_THETA
     fprintf (stderr, "start trial loop\n");
 #endif
@@ -206,27 +226,31 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
             return FALSE;
         }
 
-        if (offline_data_file == NULL) { // get data from comedi acquisition device
-            // if no new data is available or not enough data to do a fftw
-            while ((comedi_inter.number_samples_read <= last_sample_no)
-                   || (comedi_inter.number_samples_read <
-                       fftw_inter.real_data_to_fft_size)) {
-                // sleep a bit and check for new data
-                nanosleep (&tk.duration_sleep_when_no_new_data, &tk.req);
+        if (offline_data_file == NULL) {
+            /* if no new data is available or not enough data to do a fftw */
+            while (data_slice_pos < fftw_inter.real_data_to_fft_size) {
+                int16_t data;
+
+                 /* get data from MAX1133 ADC chip */
+                if (!max1133daq_get_data (daq, &data)) {
+                    fftw_inter.signal_data[data_slice_pos] = data;
+                    data_slice_pos++;
+                } else {
+                    /* sleep a bit and check for new data */
+                    nanosleep (&tk.duration_sleep_when_no_new_data, &tk.req);
+                }
             }
-            // copy the last data from the comedi_interface into the fftw_inter.signal_data
-            last_sample_no =
-                comedi_interface_get_last_data_one_channel (&comedi_inter,
-                        BRAIN_CHANNEL_1,
-                        fftw_inter.real_data_to_fft_size,
-                        fftw_inter.signal_data,
-                        &tk.time_last_acquired_data);
-            if (last_sample_no == -1) {
-                fprintf (stderr,
-                         "error returned by comedi_interface_get_data_one_channe()\n");
-                return FALSE;
-            }
-        } else {              // get data from a dat file
+
+            /* set time when the last sample was acquired */
+            clock_gettime(CLOCK_REALTIME, &tk.time_last_acquired_data);
+
+            data_slice_pos = 0;
+
+        } else {
+            long int last_sample_no = 0;
+            guint i;
+
+            /* get data from a dat file */
             if (last_sample_no == 0) {
                 // fill the buffer with the beginning of the file
                 if ((data_file_si_get_data_one_channel (&data_file, offline_channel, data_from_file, 0, fftw_inter.real_data_to_fft_size)) != 0) {
@@ -245,11 +269,8 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
                     0) {
                     fprintf (stderr,
                              "Problem with data_file_si_get_data_one_channel, first index: %ld, last index: %ld\n",
-                             last_sample_no +
-                             new_samples_per_read_operation -
-                             fftw_inter.real_data_to_fft_size,
-                             last_sample_no +
-                             new_samples_per_read_operation);
+                             last_sample_no + new_samples_per_read_operation - fftw_inter.real_data_to_fft_size,
+                             last_sample_no + new_samples_per_read_operation);
                     return FALSE;
                 }
                 last_sample_no =
@@ -260,6 +281,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
                 fftw_inter.signal_data[i] = data_from_file[i];
             }
         }
+
 #ifdef DEBUG_THETA
         clock_gettime (CLOCK_REALTIME, &tk.time_current_new_data);
         tk.duration_previous_current_new_data =
@@ -271,7 +293,6 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
                  tk.duration_previous_current_new_data.tv_nsec / 1000.0);
         tk.time_previous_new_data = tk.time_current_new_data;
 #endif
-        if (last_sample_no >= fftw_inter.real_data_to_fft_size) {
             // filter for theta and delta
             fftw_interface_theta_apply_filter_theta_delta (&fftw_inter);
 
@@ -332,37 +353,15 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
                         clock_gettime (CLOCK_REALTIME,
                                        &tk.time_last_stimulation);
 
-                        // start the pulse
-                        comedi_data_write (comedi_inter.
-                                           dev
-                                           [device_index_for_stimulation].
-                                           comedi_dev,
-                                           comedi_inter.
-                                           dev
-                                           [device_index_for_stimulation].
-                                           subdevice_analog_output,
-                                           CHANNEL_FOR_PULSE, 0,
-                                           comedi_inter.
-                                           dev
-                                           [device_index_for_stimulation].
-                                           aref, comedi_pulse);
-                        // wait
+                        /* start the pulse */
+                        stimpulse_set_trigger_high ();
+
+                        /* wait */
                         nanosleep (&tk.duration_pulse, &tk.req);
 
-                        // end of the pulse
-                        comedi_data_write (comedi_inter.
-                                           dev
-                                           [device_index_for_stimulation].
-                                           comedi_dev,
-                                           comedi_inter.
-                                           dev
-                                           [device_index_for_stimulation].
-                                           subdevice_analog_output,
-                                           CHANNEL_FOR_PULSE, 0,
-                                           comedi_inter.
-                                           dev
-                                           [device_index_for_stimulation].
-                                           aref, comedi_baseline);
+                        /* end of the pulse */
+                        stimpulse_set_trigger_low ();
+
 #ifdef DEBUG_THETA
                         fprintf (stderr,
                                  "interval from last stimulation: %ld (us)\n",
@@ -379,15 +378,14 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
 
             // will stop the trial
             //            tk.elapsed_beginning_trial.tv_sec = tk.trial_duration_sec;
-        }
         clock_gettime (CLOCK_REALTIME, &tk.time_now);
         tk.elapsed_beginning_trial =
             diff (&tk.time_beginning_trial, &tk.time_now);
     }
 
     // this will stop the acquisition thread
-    if (comedi_interface_stop_acquisition (&comedi_inter) == -1) {
-        fprintf ("Could not stop comedi acquisition\n");
+    if (!max1133daq_stop (daq)) {
+        fprintf (stderr, "Could not stop comedi acquisition\n");
         return FALSE;
     }
 
