@@ -40,7 +40,7 @@ stimpulse_gpio_init (void)
  * stimpulse_set_intensity:
  */
 void
-stimpulse_set_intensity (int value)
+stimpulse_set_intensity (double value)
 {
     gpio_write (GPIO_PIN_INTENSITY, value);
 }

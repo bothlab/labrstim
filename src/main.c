@@ -25,9 +25,8 @@
 #include <sys/mman.h>
 
 #include "defaults.h"
-#include "data-file-si.h"
-#include "timespec-utils.h"
 #include "tasks.h"
+#include "stimpulse.h"
 
 /* misc */
 static const gchar *app_name = "labrstim";
@@ -55,11 +54,9 @@ static int opt_swr_offline_reference = 1;
 static gboolean opt_delay_swr = FALSE;
 
 static double opt_swr_refractory = 0;
-static double opt_ttl_amplitude_volt = 3; // for ttl pulse
 
 static gboolean opt_version = FALSE;
 static gboolean opt_help = FALSE;
-
 
 
 static GOptionEntry option_entries[] =
@@ -174,7 +171,7 @@ main (int argc, char *argv[])
 
     /* check if we have the required number of remaining args */
     if (argc != 5) {
-        guint i;
+        gint i;
         fprintf (stderr, "Usage for %s is \n", app_name);
         fprintf (stderr, "%s trial_duration_sec pulse_duration_ms laser_intensity_volts\n", argv[0]);
         fprintf (stderr, "You need %d arguments but gave %d arguments: \n",
@@ -187,14 +184,6 @@ main (int argc, char *argv[])
 
     // variables read from arguments
     double laser_intensity_volt;  // for laser power
-    double baseline_volt = 0;     // for ttl pulse
-
-    // list of channels to scan, bluff, we will sample the same channel many times
-    int channel_list[NUMBER_SAMPLED_CHANNEL_DEVICE_0];
-    long int last_sample_no = 0;
-
-    double swr_power = 0;
-    double swr_convolution_peak = 0;
 
     // parce the arguments from the command line
     double trial_duration_sec = atof (argv[2]);
@@ -383,6 +372,10 @@ main (int argc, char *argv[])
     /* set a random seed based on the time we launched */
     init_random_seed ();
 
+    /* init laser intensity value */
+    stimpulse_gpio_init ();
+    stimpulse_set_intensity (laser_intensity_volt);
+
     /* Do train a stimulation at a given frequency or at random intervals */
     if (opt_cmd_train) {
         perform_train_stimulation (opt_random,
@@ -401,6 +394,7 @@ main (int argc, char *argv[])
                                    pulse_duration_ms,
                                    opt_stimulation_theta_phase,
                                    opt_dat_file_name,
+                                   opt_channels_in_dat_file,
                                    opt_offline_channel);
         return 0;
     }
@@ -410,7 +404,16 @@ main (int argc, char *argv[])
     if (opt_cmd_swr) {
         perform_swr_stimulation (trial_duration_sec,
                                  pulse_duration_ms,
-                                 NULL);
+                                 opt_swr_refractory,
+                                 opt_swr_power_threshold,
+                                 opt_swr_convolution_peak_threshold,
+                                 opt_delay_swr,
+                                 opt_minimum_interval_ms,
+                                 opt_maximum_interval_ms,
+                                 opt_dat_file_name,
+                                 opt_channels_in_dat_file,
+                                 opt_offline_channel,
+                                 opt_swr_offline_reference);
         return 0;
     }
 

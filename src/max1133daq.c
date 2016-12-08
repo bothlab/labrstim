@@ -289,7 +289,8 @@ max1133daq_is_running (Max1133Daq *daq)
  * max1133daq_get_data:
  */
 gboolean
-max1133daq_get_data (Max1133Daq *daq, int16_t *data)
+max1133daq_get_data (Max1133Daq *daq, uint8_t channel, int16_t *data)
 {
+    /* TODO: Implement multichannel recording */
     return rb_pull_data (daq->rb, data);
 }

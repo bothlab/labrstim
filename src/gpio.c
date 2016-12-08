@@ -132,7 +132,7 @@ gpio_read (int pin)
  * gpio_write:
  */
 int
-gpio_write (int pin, int value)
+gpio_write (int pin, double value)
 {
     static const char s_values_str[] = "01";
 

@@ -22,8 +22,6 @@
 
 #include <glib.h>
 
-#include "data-file-si.h"
-
 gboolean
 perform_train_stimulation (gboolean random,
                            double trial_duration_sec,
@@ -38,12 +36,22 @@ perform_theta_stimulation (gboolean random,
                            double pulse_duration_ms,
                            double stimulation_theta_phase,
                            const gchar *offline_data_file,
+                           int channels_in_dat_file,
                            int offline_channel);
 
 gboolean
 perform_swr_stimulation (double trial_duration_sec,
                          double pulse_duration_ms,
-                         data_file_si *offline_data_file);
+                         double swr_refractory,
+                         double swr_power_threshold,
+                         double swr_convolution_peak_threshold,
+                         gboolean delay_swr,
+                         double minimum_interval_ms,
+                         double maximum_interval_ms,
+                         const gchar *offline_data_file,
+                         int channels_in_dat_file,
+                         int offline_channel,
+                         int offline_reference_channel);
 
 
 #endif /* __LS_TASKS_H */

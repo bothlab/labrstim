@@ -11,8 +11,6 @@ compiler = meson.get_compiler('c')
 labrstim_src = [
     'src/defaults.h',
     'src/main.c',
-    'src/brintf.h',
-    'src/brintf.c',
     'src/fftw-functions.h',
     'src/fftw-functions.c',
     'src/data-file-si.h',
@@ -54,6 +52,21 @@ configure_file(input: 'config.h.in',
                output: 'config.h',
                configuration: conf
 )
+
+#
+# Settings
+#
+add_global_arguments(['-Werror=implicit-function-declaration', '-Wno-unused-parameter'], language: 'c')
+
+if (get_option('maintainer'))
+    add_global_arguments(['-Werror', '-Wall', '-Wextra'], language: 'c')
+endif
+
+if (get_option('optimize'))
+    # we optimize as much as possible if this option is set
+    add_global_arguments(['-O3', '-march=native'], language: 'c')
+endif
+
 
 #
 # Targets

@@ -30,7 +30,7 @@ date 15.02.2010
 int
 fftw_interface_theta_init (struct fftw_interface_theta *fftw_int)
 {
-    int i;
+    unsigned int i;
     // the next 3 variables should be set according to argument pass to this function.
     // that way the size of signal analyzed could be set in main.c according to options
     fftw_int->sampling_rate = DEFAULT_SAMPLING_RATE;
@@ -179,7 +179,7 @@ int
 fftw_interface_theta_apply_filter_theta_delta (struct fftw_interface_theta
         *fftw_int)
 {
-    int i;
+    unsigned int i;
     double sum = 0;
     double mean;
 
@@ -231,7 +231,7 @@ fftw_interface_theta_apply_filter_theta_delta (struct fftw_interface_theta
 double
 fftw_interface_theta_delta_ratio (struct fftw_interface_theta *fftw_int)
 {
-    int i;
+    unsigned int i;
     fftw_int->signal_sum_square = 0;
     fftw_int->signal_mean_square = 0;
     fftw_int->signal_root_mean_square_theta = 0;
@@ -387,6 +387,9 @@ make_butterworth_filter (int sampling_rate,     // max freq is sr/2
     }
     free (function_low_pass);
     free (function_high_pass);
+
+    /* FIXME: we don't use this variable (yet?) */
+    (void) n_high;
     return 0;
 }
 
@@ -419,7 +422,7 @@ phase_difference (double phase1, double phase2)
 int
 fftw_interface_swr_init (struct fftw_interface_swr *fftw_int)
 {
-    int i;
+    unsigned int i;
     // the next 3 variables should be set according to argument pass to this function.
     // that way the size of signal analyzed could be set in main.c according to options
     fftw_int->sampling_rate = DEFAULT_SAMPLING_RATE;
@@ -622,7 +625,7 @@ int
 fftw_interface_swr_differential_and_filter (struct fftw_interface_swr
         *fftw_int)
 {
-    int i;
+    unsigned int i;
     double sum = 0;
     double mean;
     // do the differential between signal and ref_signal, one signal minus the other
@@ -669,7 +672,7 @@ double
 fftw_interface_swr_get_convolution_peak (struct fftw_interface_swr *fftw_int)
 {
 
-    int i;
+    unsigned int i;
     double max = fftw_int->convoluted_signal[0];
 
     for (i = fftw_int->real_data_to_fft_size - fftw_int->power_signal_length;
@@ -702,7 +705,7 @@ double
 fftw_interface_swr_get_power (struct fftw_interface_swr *fftw_int)
 {
     // this function returns the power as a z score, and also calculate the mean and std of power
-    int i;
+    unsigned int i;
     fftw_int->signal_sum_square = 0;
     fftw_int->signal_mean_square = 0;
     fftw_int->signal_root_mean_square = 0;

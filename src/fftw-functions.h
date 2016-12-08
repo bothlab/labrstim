@@ -31,13 +31,13 @@
 struct fftw_interface_swr
 {
     int sampling_rate;
-    int real_data_to_fft_size; // is smaller than fft_signal_data_size, rest will be padded with zero
-    int fft_signal_data_size; // should be pow of 2
+    size_t real_data_to_fft_size; // is smaller than fft_signal_data_size, rest will be padded with zero
+    size_t fft_signal_data_size; // should be pow of 2
     double fft_scale;
     double* signal_data; // array of fft_signal_data_size size
     double* ref_signal_data;
     double* wavelet_for_convolution;
-    int m; // length of the fft complex array (diff than for numerical reciepe)
+    size_t m; // length of the fft complex array (diff than for numerical reciepe)
     int power_signal_length; // portion of the signal on which the power is calculated
     // start from most recent data and go back this number of samples
     // limits for the band-pass filter
@@ -79,10 +79,10 @@ struct fftw_interface_swr
 struct fftw_interface_theta
 {
     int sampling_rate;
-    int real_data_to_fft_size; // is smaller than fft_signal_data_size, rest will be padded with zero
-    int fft_signal_data_size; // should be pow of 2
+    size_t real_data_to_fft_size; // is smaller than fft_signal_data_size, rest will be padded with zero
+    size_t fft_signal_data_size; // should be pow of 2
     double* signal_data; // array of fft_signal_data_size size
-    int m; // length of the fft complex array (diff than for numerical reciepe)
+    size_t m; // length of the fft complex array (diff than for numerical reciepe)
     int power_signal_length; // portion of the signal on which the power is calculated
                              // start from most recent data and go back this number of samples
     // limits for the different filters

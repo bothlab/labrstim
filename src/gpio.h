@@ -36,6 +36,6 @@ int gpio_set_direction (int pin,
 int gpio_read (int pin);
 
 int gpio_write (int pin,
-                int value);
+                double value);
 
 #endif /* __LS_GPIO_H */

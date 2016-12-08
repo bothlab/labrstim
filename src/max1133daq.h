@@ -40,6 +40,7 @@ gboolean        max1133daq_stop (Max1133Daq *daq);
 gboolean        max1133daq_is_running (Max1133Daq *daq);
 
 gboolean        max1133daq_get_data (Max1133Daq *daq,
+                                     uint8_t channel,
                                      int16_t *data);
 
 

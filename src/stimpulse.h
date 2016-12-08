@@ -28,7 +28,7 @@
 
 void            stimpulse_gpio_init (void);
 
-void            stimpulse_set_intensity (int value);
+void            stimpulse_set_intensity (double value);
 
 void            stimpulse_set_trigger_high (void);
 void            stimpulse_set_trigger_low (void);

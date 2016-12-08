@@ -132,18 +132,17 @@ perform_train_stimulation (gboolean random, double trial_duration_sec, double pu
  * Do the theta stimulation.
  */
 gboolean
-perform_theta_stimulation (gboolean random, double trial_duration_sec, double pulse_duration_ms,
-                           double stimulation_theta_phase, const gchar *offline_data_file, int offline_channel)
+perform_theta_stimulation (gboolean random, double trial_duration_sec, double pulse_duration_ms, double stimulation_theta_phase,
+                           const gchar *offline_data_file, int channels_in_dat_file, int offline_channel)
 {
     TimeKeeper tk;
     Max1133Daq *daq;
-    size_t data_slice_pos = 0;
 
     /* variables to work offline from a dat file */
-    int new_samples_per_read_operation = 60; //  3 ms of data
+    int new_samples_per_read_operation = 60; /* 3 ms of data */
     data_file_si data_file;
     short int* data_from_file;
-    short int* ref_from_file;
+    long int last_sample_no = 0;
 
     double theta_frequency = (MIN_FREQUENCY_THETA + MAX_FREQUENCY_THETA) / 2;
     double theta_degree_duration_ms = (1000 / theta_frequency) / 360;
@@ -166,7 +165,6 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
 
     /* structure with variables to do the filtering of signal */
     struct fftw_interface_theta fftw_inter;
-    struct fftw_interface_swr fftw_inter_swr;
 
     daq = max1133daq_new (DEFAULT_DAQ_SPI_DEVICE);
 
@@ -176,6 +174,12 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
     }
 
     if (offline_data_file != NULL) {
+        /* initialize the dat file */
+        if (init_data_file_si (&data_file, offline_data_file, channels_in_dat_file) != 0) {
+            fprintf (stderr, "Problem in initialisation of dat file\n");
+            return FALSE;
+        }
+
         // if get data from dat file, allocate memory to store short integer from dat file
         if ((data_from_file =
                  (short *) malloc (sizeof (short) *
@@ -218,7 +222,10 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
     fprintf (stderr, "start trial loop\n");
 #endif
 
-    while (tk.elapsed_beginning_trial.tv_sec < tk.trial_duration_sec) { // loop until the trial is over
+    /* loop until the trial is over */
+    while (tk.elapsed_beginning_trial.tv_sec < tk.trial_duration_sec) {
+        size_t data_slice_pos = 0;
+
         // check if acquisition loop is still running, could have stop because of buffer overflow
         if (!max1133daq_is_running (daq)) {
             fprintf (stderr,
@@ -231,8 +238,8 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
             while (data_slice_pos < fftw_inter.real_data_to_fft_size) {
                 int16_t data;
 
-                 /* get data from MAX1133 ADC chip */
-                if (!max1133daq_get_data (daq, &data)) {
+                /* get data from MAX1133 ADC chip */
+                if (max1133daq_get_data (daq, 0, &data)) {
                     fftw_inter.signal_data[data_slice_pos] = data;
                     data_slice_pos++;
                 } else {
@@ -247,15 +254,14 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
             data_slice_pos = 0;
 
         } else {
-            long int last_sample_no = 0;
             guint i;
 
             /* get data from a dat file */
             if (last_sample_no == 0) {
                 // fill the buffer with the beginning of the file
                 if ((data_file_si_get_data_one_channel (&data_file, offline_channel, data_from_file, 0, fftw_inter.real_data_to_fft_size)) != 0) {
-                    fprintf (stderr, "Problem with data_file_si_get_data_one_channel, first index: %d, last index: %d\n",
-                                0, fftw_inter.real_data_to_fft_size);
+                    fprintf (stderr, "Problem with data_file_si_get_data_one_channel, first index: %d, last index: %zu\n",
+                             0, fftw_inter.real_data_to_fft_size);
                     return FALSE;
                 }
                 last_sample_no = fftw_inter.real_data_to_fft_size;
@@ -293,119 +299,145 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
                  tk.duration_previous_current_new_data.tv_nsec / 1000.0);
         tk.time_previous_new_data = tk.time_current_new_data;
 #endif
-            // filter for theta and delta
-            fftw_interface_theta_apply_filter_theta_delta (&fftw_inter);
+        // filter for theta and delta
+        fftw_interface_theta_apply_filter_theta_delta (&fftw_inter);
 
-            /* to see real and filtered signal
-                for(i=0;i < fftw_inter.real_data_to_fft_size;i++)
-                {
-                printf("aa %lf, %lf\n",fftw_inter.filtered_signal_theta[i], fftw_inter.signal_data[i]);
-                }
-                return FALSE;
-                */
-            // get the theta/delta ratio
-
-            theta_delta_ratio =
-                fftw_interface_theta_delta_ratio (&fftw_inter);
-#ifdef DEBUG_THETA
-            fprintf (stderr, "theta_delta_ratio: %lf\n", theta_delta_ratio);
-#endif
-            if (theta_delta_ratio > THETA_DELTA_RATIO) {
-                clock_gettime (CLOCK_REALTIME, &tk.time_now);
-                tk.elapsed_last_acquired_data =
-                    diff (&tk.time_last_acquired_data, &tk.time_now);
-                // get the phase
-                current_phase =
-                    fftw_interface_theta_get_phase (&fftw_inter,
-                                                    &tk.
-                                                    elapsed_last_acquired_data,
-                                                    theta_frequency);
-                // phase difference between wanted and what it is now, from -180 to 180
-                phase_diff =
-                    phase_difference (current_phase, stimulation_theta_phase);
-#ifdef DEBUG_THETA
-                fprintf (stderr,
-                         "stimulation_theta_phase: %lf current_phase: %lf phase_difference: %lf\n",
-                         stimulation_theta_phase, current_phase,
-                         phase_difference);
-#endif
-                // if the absolute phase difference is smaller than the max_phase_difference
-                if (sqrt (phase_diff * phase_diff) < max_phase_diff) {
-                    // if we are just before the stimulation phase, we nanosleep to be bang on the correct phase
-                    if (phase_diff < 0) {
-                        tk.duration_sleep_to_right_phase =
-                            set_timespec_from_ms ((0 -
-                                                   phase_diff) *
-                                                  theta_degree_duration_ms);
-                        nanosleep (&tk.duration_sleep_to_right_phase,
-                                   &tk.req);
-                    }
-                    clock_gettime (CLOCK_REALTIME, &tk.time_now);
-                    tk.elapsed_last_stimulation =
-                        diff (&tk.time_last_stimulation, &tk.time_now);
-
-                    // if the laser refractory period is over
-                    if (tk.elapsed_last_stimulation.tv_nsec >
-                        tk.duration_refractory_period.tv_nsec
-                        || tk.elapsed_last_stimulation.tv_sec >
-                        tk.duration_refractory_period.tv_sec) {
-                        // stimulation time!!
-                        clock_gettime (CLOCK_REALTIME,
-                                       &tk.time_last_stimulation);
-
-                        /* start the pulse */
-                        stimpulse_set_trigger_high ();
-
-                        /* wait */
-                        nanosleep (&tk.duration_pulse, &tk.req);
-
-                        /* end of the pulse */
-                        stimpulse_set_trigger_low ();
-
-#ifdef DEBUG_THETA
-                        fprintf (stderr,
-                                 "interval from last stimulation: %ld (us)\n",
-                                 tk.elapsed_last_stimulation.tv_nsec /
-                                 1000);
-#endif
-                    }
-                }
+        /* to see real and filtered signal
+            for(i=0;i < fftw_inter.real_data_to_fft_size;i++)
+            {
+            printf("aa %lf, %lf\n",fftw_inter.filtered_signal_theta[i], fftw_inter.signal_data[i]);
             }
+            return FALSE;
+            */
+        // get the theta/delta ratio
 
+        theta_delta_ratio =
+            fftw_interface_theta_delta_ratio (&fftw_inter);
+#ifdef DEBUG_THETA
+        fprintf (stderr, "theta_delta_ratio: %lf\n", theta_delta_ratio);
+#endif
+        if (theta_delta_ratio > THETA_DELTA_RATIO) {
             clock_gettime (CLOCK_REALTIME, &tk.time_now);
             tk.elapsed_last_acquired_data =
                 diff (&tk.time_last_acquired_data, &tk.time_now);
+            // get the phase
+            current_phase =
+                fftw_interface_theta_get_phase (&fftw_inter,
+                                                &tk.
+                                                elapsed_last_acquired_data,
+                                                theta_frequency);
+            // phase difference between wanted and what it is now, from -180 to 180
+            phase_diff =
+                phase_difference (current_phase, stimulation_theta_phase);
+#ifdef DEBUG_THETA
+            fprintf (stderr,
+                     "stimulation_theta_phase: %lf current_phase: %lf phase_difference: %lf\n",
+                     stimulation_theta_phase, current_phase,
+                     phase_difference);
+#endif
+            // if the absolute phase difference is smaller than the max_phase_difference
+            if (sqrt (phase_diff * phase_diff) < max_phase_diff) {
+                // if we are just before the stimulation phase, we nanosleep to be bang on the correct phase
+                if (phase_diff < 0) {
+                    tk.duration_sleep_to_right_phase =
+                        set_timespec_from_ms ((0 -
+                                               phase_diff) *
+                                              theta_degree_duration_ms);
+                    nanosleep (&tk.duration_sleep_to_right_phase,
+                               &tk.req);
+                }
+                clock_gettime (CLOCK_REALTIME, &tk.time_now);
+                tk.elapsed_last_stimulation =
+                    diff (&tk.time_last_stimulation, &tk.time_now);
 
-            // will stop the trial
-            //            tk.elapsed_beginning_trial.tv_sec = tk.trial_duration_sec;
+                // if the laser refractory period is over
+                if (tk.elapsed_last_stimulation.tv_nsec >
+                    tk.duration_refractory_period.tv_nsec
+                    || tk.elapsed_last_stimulation.tv_sec >
+                    tk.duration_refractory_period.tv_sec) {
+                    // stimulation time!!
+                    clock_gettime (CLOCK_REALTIME,
+                                   &tk.time_last_stimulation);
+
+                    /* start the pulse */
+                    stimpulse_set_trigger_high ();
+
+                    /* wait */
+                    nanosleep (&tk.duration_pulse, &tk.req);
+
+                    /* end of the pulse */
+                    stimpulse_set_trigger_low ();
+
+#ifdef DEBUG_THETA
+                    fprintf (stderr,
+                             "interval from last stimulation: %ld (us)\n",
+                             tk.elapsed_last_stimulation.tv_nsec /
+                             1000);
+#endif
+                }
+            }
+        }
+
+        clock_gettime (CLOCK_REALTIME, &tk.time_now);
+        tk.elapsed_last_acquired_data =
+            diff (&tk.time_last_acquired_data, &tk.time_now);
+
+        // will stop the trial
+        //            tk.elapsed_beginning_trial.tv_sec = tk.trial_duration_sec;
         clock_gettime (CLOCK_REALTIME, &tk.time_now);
         tk.elapsed_beginning_trial =
             diff (&tk.time_beginning_trial, &tk.time_now);
     }
 
-    // this will stop the acquisition thread
+    /* this will stop the acquisition thread */
     if (!max1133daq_stop (daq)) {
-        fprintf (stderr, "Could not stop comedi acquisition\n");
+        fprintf (stderr, "Could not stop data acquisition\n");
         return FALSE;
     }
 
-    // free the memory used by fftw_inter
+    /* free the memory used by fftw_inter */
     fftw_interface_theta_free (&fftw_inter);
+
+    /* free daq interface */
+    max1133daq_free (daq);
+
+    /* free the memory for dat file data, if running with offline data */
+    if (offline_data_file != NULL) {
+        if ((clean_data_file_si (&data_file)) != 0) {
+            fprintf (stderr, "Problem with clean_data_file_si\n");
+            return FALSE;
+        }
+        free (data_from_file);
+    }
 
     return TRUE;
 }
 
-#if 0
 /**
  * perform_swr_stimulation:
  *
  * Do swr stimulation
  */
 gboolean
-perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, const gchar *offline_data_file)
+perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, double swr_refractory, double swr_power_threshold, double swr_convolution_peak_threshold,
+                         gboolean delay_swr, double minimum_interval_ms, double maximum_interval_ms,
+                         const gchar *offline_data_file, int channels_in_dat_file, int offline_channel, int offline_reference_channel)
 {
     TimeKeeper tk;
+    Max1133Daq *daq;
 
+    /* variables to work offline from a dat file */
+    data_file_si data_file;
+    int new_samples_per_read_operation = 60; /* 3 ms of data */
+    short int *data_from_file;
+    short int *ref_from_file;
+    size_t last_sample_no = 0;
+
+    /* fftw SWR filtering structure */
+    struct fftw_interface_swr fftw_inter_swr;
+
+
+    /* set up timekeeper */
     tk.trial_duration_sec = trial_duration_sec;
     tk.pulse_duration_ms = pulse_duration_ms;
 
@@ -415,33 +447,36 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, co
     tk.interval_duration_between_swr_processing =
         set_timespec_from_ms (INTERVAL_DURATION_BETWEEN_SWR_PROCESSING_MS);
 
-    // variables to work offline from a dat file
-    int new_samples_per_read_operation = 60;      //  3 ms of data
-    short int *data_from_file;
-    short int *ref_from_file;
+    /* create DAQ interface */
+    daq = max1133daq_new (DEFAULT_DAQ_SPI_DEVICE);
 
-    /*****************************************
-        code to initialize the dat file if needed
-        ********************************************/
-    if (init_data_file_si (&data_file, opt_dat_file_name, opt_channels_in_dat_file) != 0) {
-        fprintf (stderr, "%s: problem in initialisation of dat file\n",
-                 app_name);
+    /* initialize fftw interface */
+    if (fftw_interface_swr_init (&fftw_inter_swr) == -1) {
+        fprintf (stderr, "Could not initialize fftw_interface_swr\n");
         return FALSE;
     }
 
-    if (fftw_interface_swr_init (&fftw_inter_swr) == -1) {    // initialize the fftw interface
-        fprintf (stderr, "%s could not initialize fftw_interface_swr\n",
-                 prog_name);
-        return FALSE;
-    }
-    if (with_o_opt == 1) {    // the program is running from a data file. allocate memory for 2 arrays.
+    if (offline_data_file == NULL) {
+        /* we are not using a dat file, start data acquisition */
+        if (!max1133daq_start (daq)) {
+            fprintf (stderr, "Could not start data acquisition\n");
+            return FALSE;
+        }
+    } else {
+        /* the program is running from a data file. allocate memory for 2 arrays. */
+
+        /* initialize the dat file */
+        if (init_data_file_si (&data_file, offline_data_file, channels_in_dat_file) != 0) {
+            fprintf (stderr, "Problem in initialisation of dat file\n");
+            return FALSE;
+        }
+
         if ((data_from_file =
                  (short *) malloc (sizeof (short) *
                                    fftw_inter_swr.real_data_to_fft_size)) ==
             NULL) {
             fprintf (stderr,
-                     "%s: problem allocating memory for data_from_file\n",
-                     prog_name);
+                     "Problem allocating memory for data_from_file\n");
             return FALSE;
         }
         if ((ref_from_file =
@@ -449,20 +484,10 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, co
                                    fftw_inter_swr.real_data_to_fft_size)) ==
             NULL) {
             fprintf (stderr,
-                     "%s: problem allocating memory for ref_from_file\n",
-                     prog_name);
+                     "Problem allocating memory for ref_from_file\n");
             return FALSE;
         }
     }
-    if (with_o_opt == 0) {
-        if (comedi_interface_start_acquisition (&comedi_inter) == -1) { // initialize the comedi interface
-            fprintf (stderr, "%s could not start comedi acquisition\n",
-                     prog_name);
-            return FALSE;
-        }
-    }
-
-
 
 #ifdef DEBUG_SWR
     // to check the intervals before getting new data.
@@ -482,58 +507,88 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, co
     // to check the intervals before getting new data.
     fprintf (stderr, "starting trial loop for swr\n");
 #endif
-    while (tk.elapsed_beginning_trial.tv_sec < tk.trial_duration_sec) { // while (the trial is not over yet)
-        if (with_o_opt == 0) { // get data from comedi acquisition interface
-            // check if acquisition loop is still running, could have stop because of buffer overflow
-            if (comedi_inter.is_acquiring == 0) {
+
+    /* loop while the trial is running */
+    while (tk.elapsed_beginning_trial.tv_sec < tk.trial_duration_sec) {
+        size_t data_slice_pos = 0;
+        size_t data_ref_slice_pos = 0;
+        gboolean acquire_data = TRUE;
+
+        if (offline_data_file == NULL) {
+            /* get data from our ADC chip */
+
+            /* check if acquisition loop is still running, could have stop because of buffer overflow */
+            if (!max1133daq_is_running (daq)) {
                 fprintf (stderr,
-                         "comedi acquisition was stopped, swr stimulation not possible\n");
+                         "Data acquisition was stopped, swr stimulation not possible\n");
                 return FALSE;
             }
-            // if no new data is available or not enough data to do a fftw
-            while ((comedi_inter.number_samples_read <= last_sample_no)
-                   || (comedi_inter.number_samples_read <
-                       fftw_inter_swr.real_data_to_fft_size)) {
-                // sleep a bit and check for new data
-                nanosleep (&tk.duration_sleep_when_no_new_data, &tk.req);
+
+            while (acquire_data) {
+                int16_t data;
+                int16_t data_ref;
+                gboolean data_acquired = FALSE;
+
+                /* get data from MAX1133 ADC chip, data channel */
+                if (data_slice_pos < fftw_inter_swr.real_data_to_fft_size) {
+                    if (max1133daq_get_data (daq, 0, &data)) {
+                        fftw_inter_swr.signal_data[data_slice_pos] = data;
+                        data_slice_pos++;
+                        data_acquired = TRUE;
+                    }
+                } else {
+                    acquire_data = FALSE;
+                }
+
+                /* get data from MAX1133 ADC chip, reference channel */
+                if (data_ref_slice_pos < fftw_inter_swr.real_data_to_fft_size) {
+                    if (max1133daq_get_data (daq, 1, &data_ref)) {
+                        fftw_inter_swr.ref_signal_data[data_ref_slice_pos] = data_ref;
+                        data_ref_slice_pos++;
+                        data_acquired = TRUE;
+                    }
+                    acquire_data = TRUE;
+                } else {
+                    acquire_data = FALSE;
+                }
+
+                if (data_acquired) {
+                    /* sleep a bit, then check for new data */
+                    nanosleep (&tk.duration_sleep_when_no_new_data, &tk.req);
+                }
+
+                /* set time when the last sample was acquired */
+                clock_gettime(CLOCK_REALTIME, &tk.time_last_acquired_data);
             }
-            // copy the last data from the comedi_interface into the fftw_inter_swr.signal_data and fftw_inter_swr.ref_signal_data
-            last_sample_no =
-                comedi_interface_get_last_data_two_channels (&comedi_inter,
-                        BRAIN_CHANNEL_1,
-                        BRAIN_CHANNEL_2,
-                        fftw_inter_swr.
-                        real_data_to_fft_size,
-                        fftw_inter_swr.
-                        signal_data,
-                        fftw_inter_swr.
-                        ref_signal_data,
-                        &tk.
-                        time_last_acquired_data);
-        } else {              // get data from a dat file
+
+            data_slice_pos = 0;
+            data_ref_slice_pos = 0;
+        } else {
+            guint i;
+
+            /* get data from a dat file */
+
             if (last_sample_no == 0) {
                 // fill the buffer with the beginning of the file
                 if ((data_file_si_get_data_one_channel
                      (&data_file, offline_channel, data_from_file, 0,
                       fftw_inter_swr.real_data_to_fft_size - 1)) != 0) {
                     fprintf (stderr,
-                             "%s, problem with data_file_si_get_data_one_channel, first index: %d, last index: %d\n",
-                             prog_name, 0,
+                             "Problem with data_file_si_get_data_one_channel, first index: %d, last index: %zu\n", 0,
                              fftw_inter_swr.real_data_to_fft_size - 1);
                     return FALSE;
                 }
                 if ((data_file_si_get_data_one_channel
-                     (&data_file, swr_offline_reference, ref_from_file, 0,
+                     (&data_file, offline_reference_channel, ref_from_file, 0,
                       fftw_inter_swr.real_data_to_fft_size - 1)) != 0) {
                     fprintf (stderr,
-                             "%s, problem with data_file_si_get_data_one_channel, first index: %d, last index: %d\n",
-                             prog_name, 0,
+                             "Problem with data_file_si_get_data_one_channel, first index: %d, last index: %zu\n", 0,
                              fftw_inter_swr.real_data_to_fft_size - 1);
                     return FALSE;
                 }
                 last_sample_no = fftw_inter_swr.real_data_to_fft_size - 1;
             } else {
-                // check if we still have data in the file
+                /* check if we still have data in the file */
                 if (data_file.num_samples_in_file <
                     last_sample_no + new_samples_per_read_operation - 1) {
                     // no more data in file, exit the trial loop
@@ -547,8 +602,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, co
                       last_sample_no + new_samples_per_read_operation)) !=
                     0) {
                     fprintf (stderr,
-                             "%s, problem with data_file_si_get_data_one_channel, first index: %ld, last index: %ld\n",
-                             prog_name,
+                             "Problem with data_file_si_get_data_one_channel, first index: %ld, last index: %ld\n",
                              last_sample_no +
                              new_samples_per_read_operation -
                              fftw_inter_swr.real_data_to_fft_size,
@@ -557,14 +611,13 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, co
                     return FALSE;
                 }
                 if ((data_file_si_get_data_one_channel
-                     (&data_file, swr_offline_reference, ref_from_file,
+                     (&data_file, offline_reference_channel, ref_from_file,
                       last_sample_no + new_samples_per_read_operation -
                       fftw_inter_swr.real_data_to_fft_size,
                       last_sample_no + new_samples_per_read_operation)) !=
                     0) {
                     fprintf (stderr,
-                             "%s, problem with data_file_si_get_data_one_channel, first index: %ld, last index: %ld\n",
-                             prog_name,
+                             "Problem with data_file_si_get_data_one_channel, first index: %ld, last index: %ld\n",
                              last_sample_no +
                              new_samples_per_read_operation -
                              fftw_inter_swr.real_data_to_fft_size,
@@ -582,12 +635,10 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, co
                 fftw_inter_swr.ref_signal_data[i] = ref_from_file[i];
             }
         }
-        if (last_sample_no == -1) {
-            fprintf (stderr,
-                     "error returned by comedi_interface_get_last_data_two_channels()\n");
-            return FALSE;
-        }
+
         if (last_sample_no >= fftw_inter_swr.real_data_to_fft_size) {
+            double swr_power = 0;
+            double swr_convolution_peak = 0;
 
             // do differential, filtering, and convolution
             fftw_interface_swr_differential_and_filter (&fftw_inter_swr);
@@ -596,19 +647,19 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, co
             swr_power = fftw_interface_swr_get_power (&fftw_inter_swr);
 
             // get the peak in the convoluted signal
-            swr_convolution_peak =
-                fftw_interface_swr_get_convolution_peak (&fftw_inter_swr);
+            swr_convolution_peak = fftw_interface_swr_get_convolution_peak (&fftw_inter_swr);
 
             // get the current time for refractory period
             clock_gettime (CLOCK_REALTIME, &tk.time_now);
             tk.elapsed_last_stimulation =
                 diff (&tk.time_last_stimulation, &tk.time_now);
 
-            if ((swr_power > swr_power_threshold && swr_convolution_peak > swr_convolution_peak_threshold) && // if power is large enough and refractory over
+            if ((swr_power > swr_power_threshold && swr_convolution_peak > swr_convolution_peak_threshold) && /* if power is large enough and refractory over */
                 (tk.elapsed_last_stimulation.tv_nsec >
                  tk.duration_refractory_period.tv_nsec
                  || tk.elapsed_last_stimulation.tv_sec >
                  tk.duration_refractory_period.tv_sec)) {
+
 #ifdef DEBUG_SWR
                 printf ("%ld\n", last_sample_no);
                 for (i = 0; i < fftw_inter_swr.real_data_to_fft_size; i++) {
@@ -627,73 +678,48 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, co
                          swr_convolution_peak);
                 return FALSE;
 #endif
-                // stimulation time!!
-                if (with_o_opt == 0) { // not working with a data file
-                    // do we need a delay before swr stimulation
-                    if (with_D_opt) {
-                        tk.swr_delay_ms =
-                            minimum_interval_ms +
-                            (rand () %
-                             (int) (maximum_interval_ms -
-                                    minimum_interval_ms));
-                        tk.swr_delay =
-                            set_timespec_from_ms (tk.swr_delay_ms);
-                        fprintf (stderr, "swr delay: %lf ms\n",
-                                 tk.swr_delay_ms);
+
+                /* stimulation time!! */
+                if (offline_data_file == NULL) { /* not working with a data file */
+                    /* do we need a delay before swr stimulation */
+                    if (delay_swr) {
+                        tk.swr_delay_ms = minimum_interval_ms + (rand () % (int) (maximum_interval_ms - minimum_interval_ms));
+                        tk.swr_delay = set_timespec_from_ms (tk.swr_delay_ms);
+                        g_print ("SWR delay: %lf ms\n", tk.swr_delay_ms);
                         // sleep until the next pulse, note that this will overshoot by the time of 1 lines of code! (almost nothing)
                         nanosleep (&tk.swr_delay, &tk.req);
                     }
 
-                    // start the pulse
-                    comedi_data_write (comedi_inter.
-                                       dev[device_index_for_stimulation].
-                                       comedi_dev,
-                                       comedi_inter.
-                                       dev[device_index_for_stimulation].
-                                       subdevice_analog_output,
-                                       CHANNEL_FOR_PULSE, 0,
-                                       comedi_inter.
-                                       dev[device_index_for_stimulation].
-                                       aref, comedi_pulse);
-                    // wait
+                    /* start the pulse */
+                    stimpulse_set_trigger_high ();
+
+                    /* wait */
                     nanosleep (&tk.duration_pulse, &tk.req);
 
-                    // end of the pulse
-                    comedi_data_write (comedi_inter.
-                                       dev[device_index_for_stimulation].
-                                       comedi_dev,
-                                       comedi_inter.
-                                       dev[device_index_for_stimulation].
-                                       subdevice_analog_output,
-                                       CHANNEL_FOR_PULSE, 0,
-                                       comedi_inter.
-                                       dev[device_index_for_stimulation].
-                                       aref, comedi_baseline);
-                    // get the time of last stimulation
+                    /* end of the pulse */
+                    stimpulse_set_trigger_low ();
+
+                    /* get the time of last stimulation */
                     clock_gettime (CLOCK_REALTIME,
                                    &tk.time_last_stimulation);
-                }
-                if (with_o_opt == 1) { // working with data file
+                } else {
+                    /* working with data file */
+
                     //printf("%ld %lf %lf %lf %ld\n",last_sample_no,swr_power,fftw_inter_swr.mean_power,fftw_inter_swr.std_power,fftw_inter_swr.number_segments_analysed);
                     // print the res value of the stimulation time
-                    printf ("%ld\n", last_sample_no);
+                    g_print ("%ld\n", last_sample_no);
                     // move forward in file by the duration of the pulse
-                    last_sample_no =
-                        last_sample_no +
-                        (tk.pulse_duration_ms * DEFAULT_SAMPLING_RATE / 1000);
+                    last_sample_no = last_sample_no + (tk.pulse_duration_ms * DEFAULT_SAMPLING_RATE / 1000);
                 }
             }
         }
-        // sleep so that the interval between two calculation of power is approximately tk.interval_duration_between_swr_processing
+
+        /* sleep so that the interval between two calculation of power is approximately tk.interval_duration_between_swr_processing */
         clock_gettime (CLOCK_REALTIME, &tk.time_now);
-        tk.elapsed_from_acquisition =
-            diff (&tk.time_last_acquired_data, &tk.time_now);
-        tk.duration_sleep_between_swr_processing =
-            diff (&tk.elapsed_from_acquisition,
-                  &tk.interval_duration_between_swr_processing);
+        tk.elapsed_from_acquisition = diff (&tk.time_last_acquired_data, &tk.time_now);
+        tk.duration_sleep_between_swr_processing = diff (&tk.elapsed_from_acquisition, &tk.interval_duration_between_swr_processing);
         nanosleep (&tk.duration_sleep_between_swr_processing, &tk.req);
-        tk.elapsed_beginning_trial =
-            diff (&tk.time_beginning_trial, &tk.time_now);
+        tk.elapsed_beginning_trial = diff (&tk.time_beginning_trial, &tk.time_now);
 
 #ifdef DEBUG_SWR
         tk.duration_previous_current_new_data =
@@ -707,22 +733,23 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, co
                  tk.duration_previous_current_new_data.tv_nsec / 1000.0,
                  swr_power, swr_power_threshold, swr_convolution_peak);
 #endif
-    }                       // stimulation trial is over
+    } /* stimulation trial is over */
 
     fftw_interface_swr_free (&fftw_inter_swr);
-    if (with_o_opt == 0) {
-        if (comedi_interface_stop_acquisition (&comedi_inter) == -1) {
-            fprintf (stderr, "%s could not stop comedi acquisition\n",
-                     prog_name);
+    if (offline_data_file == NULL) {
+        if (!max1133daq_stop (daq)) {
+            fprintf (stderr, "Could not stop comedi acquisition\n");
             return FALSE;
         }
     }
 
-    // free the memory for dat file data, if running with offline data
-    if (opt_dat_file_name != NULL) {
+    /* free daq interface */
+    max1133daq_free (daq);
+
+    /* free the memory for dat file data, if running with offline data */
+    if (offline_data_file != NULL) {
         if ((clean_data_file_si (&data_file)) != 0) {
-            fprintf (stderr, "%s: problem with clean_data_file_si\n",
-                     app_name);
+            fprintf (stderr, "Problem with clean_data_file_si\n");
             return FALSE;
         }
         free (data_from_file);
@@ -731,4 +758,3 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, co
 
     return TRUE;
 }
-#endif
