@@ -23,8 +23,8 @@
 #include <glib.h>
 #include <stdint.h>
 
-#define GPIO_PIN_INTENSITY 31
-#define GPIO_PIN_TRIGGER 32
+#define GPIO_PIN_INTENSITY 6
+#define GPIO_PIN_TRIGGER 12
 
 void            stimpulse_gpio_init (void);
 

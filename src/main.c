@@ -74,7 +74,7 @@ static GOptionEntry option_entries[] =
         "Train of stimulations with random intervals, use with -m and -M", NULL },
     { "minimum_interval_ms", 'm', 0, G_OPTION_ARG_DOUBLE, &opt_minimum_interval_ms,
         "Set minimum interval for stimulation at random intervals (-R) or swr delay (-s -D)", "min_ms" },
-    { "maximum_interval_ms", 'm', 0, G_OPTION_ARG_DOUBLE, &opt_maximum_interval_ms,
+    { "maximum_interval_ms", 'M', 0, G_OPTION_ARG_DOUBLE, &opt_maximum_interval_ms,
         "Set maximum interval for stimulation at random intervals (-R) or swr delay (-s -D)", "max_ms" },
 
     { "offline", 'o', 0, G_OPTION_ARG_FILENAME, &opt_dat_file_name,
@@ -235,10 +235,10 @@ main (int argc, char *argv[])
     }
 
 
-    if (opt_minimum_interval_ms >= opt_minimum_interval_ms) {
+    if (opt_minimum_interval_ms >= opt_maximum_interval_ms) {
         fprintf (stderr,
                  "%s: minimum_interval_ms needs to be smaller than maximum_intervals_ms\nYou gave %lf and %lf\n",
-                 app_name, opt_minimum_interval_ms, opt_minimum_interval_ms);
+                 app_name, opt_minimum_interval_ms, opt_maximum_interval_ms);
         return FALSE;
     }
     if (opt_minimum_interval_ms < 0) {

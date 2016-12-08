@@ -217,6 +217,8 @@ max1133daq_new (const gchar *spi_device)
     Max1133Daq *daq;
 
     daq = g_slice_new0 (Max1133Daq);
+    daq->rb = g_slice_new0 (DataRingBuffer);
+
     rb_init (daq->rb, 4096);
 
     daq->spi_fd = open (spi_device, O_RDWR);
@@ -233,6 +235,7 @@ max1133daq_free (Max1133Daq *daq)
     g_return_if_fail (daq != NULL);
 
     rb_free (daq->rb);
+    g_slice_free (DataRingBuffer, daq->rb);
     close (daq->spi_fd);
 
     g_slice_free (Max1133Daq, daq);

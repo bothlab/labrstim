@@ -37,7 +37,9 @@
 #define MAX_FREQUENCY_DELTA 4
 #define MAX_PHASE_DIFFERENCE 10
 #define SLEEP_WHEN_NO_NEW_DATA_MS 0.2
-//#define DEBUG_THETA
+
+/* #define DEBUG_THETA */
+/* #define DEBUG_SWR */
 
 
 // defines for swr detection
@@ -55,7 +57,7 @@
 #define NUMBER_SAMPLED_CHANNEL_DEVICE_0 64 // 64 is ok if your card has 64 channels, will return new data more often the larger the number
 #define INTERVAL_DURATION_BETWEEN_SWR_PROCESSING_MS 5 // the program will sleep 5 ms between each calculation of ripple power
 #define SIZE_ROOT_MEAN_SQUARE_ARRAY 10000
-//#define DEBUG_SWR
+
 
 // defines for setting device and channels that control the laser
 #define DEVICE_INDEX_FOR_STIMULATION 0
@@ -75,6 +77,6 @@
 
 #define NANOSLEEP_OVERSHOOT 0.0080000
 
-#define DEFAULT_DAQ_SPI_DEVICE "/dev/spidev1.0"
+#define DEFAULT_DAQ_SPI_DEVICE "/dev/spidev0.0"
 
 #endif /* __LS_DEFAULTS_H */

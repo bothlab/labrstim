@@ -141,7 +141,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
     /* variables to work offline from a dat file */
     int new_samples_per_read_operation = 60; /* 3 ms of data */
     data_file_si data_file;
-    short int* data_from_file;
+    short int* data_from_file = NULL;
     long int last_sample_no = 0;
 
     double theta_frequency = (MIN_FREQUENCY_THETA + MAX_FREQUENCY_THETA) / 2;
@@ -293,9 +293,8 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
         tk.duration_previous_current_new_data =
             diff (&tk.time_previous_new_data, &tk.time_current_new_data);
         fprintf (stderr,
-                 "%ld untill sample %ld, last_sample_no: %ld  with interval %lf(us)\n",
-                 counter++, comedi_inter.number_samples_read,
-                 last_sample_no,
+                 "%ld, last_sample_no: %ld  with interval %lf(us)\n",
+                 counter++, last_sample_no,
                  tk.duration_previous_current_new_data.tv_nsec / 1000.0);
         tk.time_previous_new_data = tk.time_current_new_data;
 #endif
@@ -327,13 +326,12 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
                                                 elapsed_last_acquired_data,
                                                 theta_frequency);
             // phase difference between wanted and what it is now, from -180 to 180
-            phase_diff =
-                phase_difference (current_phase, stimulation_theta_phase);
+            phase_diff = phase_difference (current_phase, stimulation_theta_phase);
 #ifdef DEBUG_THETA
             fprintf (stderr,
                      "stimulation_theta_phase: %lf current_phase: %lf phase_difference: %lf\n",
                      stimulation_theta_phase, current_phase,
-                     phase_difference);
+                     phase_diff);
 #endif
             // if the absolute phase difference is smaller than the max_phase_difference
             if (sqrt (phase_diff * phase_diff) < max_phase_diff) {
@@ -429,9 +427,11 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
     /* variables to work offline from a dat file */
     data_file_si data_file;
     int new_samples_per_read_operation = 60; /* 3 ms of data */
-    short int *data_from_file;
-    short int *ref_from_file;
+    short int *data_from_file = NULL;
+    short int *ref_from_file = NULL;
     size_t last_sample_no = 0;
+
+    guint i;
 
     /* fftw SWR filtering structure */
     struct fftw_interface_swr fftw_inter_swr;
@@ -514,6 +514,9 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
         size_t data_ref_slice_pos = 0;
         gboolean acquire_data = TRUE;
 
+        double swr_power = 0;
+        double swr_convolution_peak = 0;
+
         if (offline_data_file == NULL) {
             /* get data from our ADC chip */
 
@@ -564,8 +567,6 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
             data_slice_pos = 0;
             data_ref_slice_pos = 0;
         } else {
-            guint i;
-
             /* get data from a dat file */
 
             if (last_sample_no == 0) {
@@ -597,32 +598,20 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
                 // update the buffer by adding new data in it
                 if ((data_file_si_get_data_one_channel
                      (&data_file, offline_channel, data_from_file,
-                      last_sample_no + new_samples_per_read_operation -
-                      fftw_inter_swr.real_data_to_fft_size,
-                      last_sample_no + new_samples_per_read_operation)) !=
-                    0) {
-                    fprintf (stderr,
-                             "Problem with data_file_si_get_data_one_channel, first index: %ld, last index: %ld\n",
-                             last_sample_no +
-                             new_samples_per_read_operation -
-                             fftw_inter_swr.real_data_to_fft_size,
-                             last_sample_no +
-                             new_samples_per_read_operation - 1);
+                      last_sample_no + new_samples_per_read_operation -  fftw_inter_swr.real_data_to_fft_size,
+                      last_sample_no + new_samples_per_read_operation)) !=  0) {
+                    g_printerr ("Problem with data_file_si_get_data_one_channel, first index: %zu, last index: %zu\n",
+                                last_sample_no + new_samples_per_read_operation - fftw_inter_swr.real_data_to_fft_size,
+                                last_sample_no + new_samples_per_read_operation - 1);
                     return FALSE;
                 }
                 if ((data_file_si_get_data_one_channel
                      (&data_file, offline_reference_channel, ref_from_file,
-                      last_sample_no + new_samples_per_read_operation -
-                      fftw_inter_swr.real_data_to_fft_size,
-                      last_sample_no + new_samples_per_read_operation)) !=
-                    0) {
-                    fprintf (stderr,
-                             "Problem with data_file_si_get_data_one_channel, first index: %ld, last index: %ld\n",
-                             last_sample_no +
-                             new_samples_per_read_operation -
-                             fftw_inter_swr.real_data_to_fft_size,
-                             last_sample_no +
-                             new_samples_per_read_operation - 1);
+                      last_sample_no + new_samples_per_read_operation - fftw_inter_swr.real_data_to_fft_size,
+                      last_sample_no + new_samples_per_read_operation)) != 0) {
+                    g_printerr ("Problem with data_file_si_get_data_one_channel, first index: %zu, last index: %zu\n",
+                             last_sample_no + new_samples_per_read_operation - fftw_inter_swr.real_data_to_fft_size,
+                             last_sample_no + new_samples_per_read_operation - 1);
                     return FALSE;
                 }
                 last_sample_no =
@@ -637,9 +626,6 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
         }
 
         if (last_sample_no >= fftw_inter_swr.real_data_to_fft_size) {
-            double swr_power = 0;
-            double swr_convolution_peak = 0;
-
             // do differential, filtering, and convolution
             fftw_interface_swr_differential_and_filter (&fftw_inter_swr);
 
@@ -663,7 +649,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
 #ifdef DEBUG_SWR
                 printf ("%ld\n", last_sample_no);
                 for (i = 0; i < fftw_inter_swr.real_data_to_fft_size; i++) {
-                    printf ("%lf %lf %lf\n", fftw_inter_swr.signal_data[i],
+                    printf ("%lf %lf %zu\n", fftw_inter_swr.signal_data[i],
                             fftw_inter_swr.filtered_signal_swr[i],
                             fftw_inter_swr.convoluted_signal[i]);
                 }
@@ -707,7 +693,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
 
                     //printf("%ld %lf %lf %lf %ld\n",last_sample_no,swr_power,fftw_inter_swr.mean_power,fftw_inter_swr.std_power,fftw_inter_swr.number_segments_analysed);
                     // print the res value of the stimulation time
-                    g_print ("%ld\n", last_sample_no);
+                    g_print ("%zu\n", last_sample_no);
                     // move forward in file by the duration of the pulse
                     last_sample_no = last_sample_no + (tk.pulse_duration_ms * DEFAULT_SAMPLING_RATE / 1000);
                 }
