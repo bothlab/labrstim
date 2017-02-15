@@ -25,22 +25,29 @@
 
 typedef struct
 {
-    struct _DataRingBuffer *rb;
-    pthread_t tid;
+    struct _DataBuffer **buffer;
+    guint       channel_count;
+    pthread_t   tid;
     volatile gboolean running;
 
-    int spi_fd;
+    guint acq_frequency;
+    size_t sample_max_count;
 } Max1133Daq;
 
-Max1133Daq      *max1133daq_new (const gchar *spi_device);
+Max1133Daq      *max1133daq_new (guint channel_count,
+                                 size_t buffer_capacity);
 void            max1133daq_free (Max1133Daq *daq);
 
-gboolean        max1133daq_start (Max1133Daq *daq);
-gboolean        max1133daq_stop (Max1133Daq *daq);
+void            max1133daq_set_acq_frequency (Max1133Daq *daq,
+                                              guint hz);
+
+gboolean        max1133daq_acquire_data (Max1133Daq *daq,
+                                         size_t sample_count);
+gboolean        max1133daq_reset (Max1133Daq *daq);
 gboolean        max1133daq_is_running (Max1133Daq *daq);
 
 gboolean        max1133daq_get_data (Max1133Daq *daq,
-                                     uint8_t channel,
+                                     guint channel,
                                      int16_t *data);
 
 

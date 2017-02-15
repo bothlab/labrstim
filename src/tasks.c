@@ -166,7 +166,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
     /* structure with variables to do the filtering of signal */
     struct fftw_interface_theta fftw_inter;
 
-    daq = max1133daq_new (DEFAULT_DAQ_SPI_DEVICE);
+    daq = max1133daq_new (2, 10000);
 
     if (fftw_interface_theta_init (&fftw_inter) == -1) {
         fprintf (stderr, "Could not initialize fftw_interface_theta\n");
@@ -197,10 +197,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
     fprintf (stderr, "starting acquisition\n");
 #endif
 
-    if (!max1133daq_start (daq)) {
-        fprintf (stderr, "Could not start data acquisition\n");
-        return FALSE;
-    }
+    max1133daq_set_acq_frequency (daq, 3000); /* 3 kHz */
 
 #ifdef DEBUG_THETA
     // to check the intervals before getting new data.
@@ -226,10 +223,10 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
     while (tk.elapsed_beginning_trial.tv_sec < tk.trial_duration_sec) {
         size_t data_slice_pos = 0;
 
-        // check if acquisition loop is still running, could have stop because of buffer overflow
-        if (!max1133daq_is_running (daq)) {
+        /* acquire data */
+        if (!max1133daq_acquire_data (daq, fftw_inter.real_data_to_fft_size)) {
             fprintf (stderr,
-                     "comedi acquisition was stopped, theta stimulation not possible\n");
+                     "Unable to acquire samples, swr stimulation not possible\n");
             return FALSE;
         }
 
@@ -388,7 +385,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
     }
 
     /* this will stop the acquisition thread */
-    if (!max1133daq_stop (daq)) {
+    if (!max1133daq_reset (daq)) {
         fprintf (stderr, "Could not stop data acquisition\n");
         return FALSE;
     }
@@ -448,7 +445,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
         set_timespec_from_ms (INTERVAL_DURATION_BETWEEN_SWR_PROCESSING_MS);
 
     /* create DAQ interface */
-    daq = max1133daq_new (DEFAULT_DAQ_SPI_DEVICE);
+    daq = max1133daq_new (2, 10000);
 
     /* initialize fftw interface */
     if (fftw_interface_swr_init (&fftw_inter_swr) == -1) {
@@ -457,11 +454,8 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
     }
 
     if (offline_data_file == NULL) {
-        /* we are not using a dat file, start data acquisition */
-        if (!max1133daq_start (daq)) {
-            fprintf (stderr, "Could not start data acquisition\n");
-            return FALSE;
-        }
+        /* we are not using a dat file, set up data acquisition */
+        max1133daq_set_acq_frequency (daq, 3000); /* 3 kHz */
     } else {
         /* the program is running from a data file. allocate memory for 2 arrays. */
 
@@ -520,10 +514,10 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
         if (offline_data_file == NULL) {
             /* get data from our ADC chip */
 
-            /* check if acquisition loop is still running, could have stop because of buffer overflow */
-            if (!max1133daq_is_running (daq)) {
+            /* acquire data */
+            if (!max1133daq_acquire_data (daq, fftw_inter_swr.real_data_to_fft_size * 2)) {
                 fprintf (stderr,
-                         "Data acquisition was stopped, swr stimulation not possible\n");
+                         "Unable to acquire samples, swr stimulation not possible\n");
                 return FALSE;
             }
 
@@ -723,8 +717,8 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
 
     fftw_interface_swr_free (&fftw_inter_swr);
     if (offline_data_file == NULL) {
-        if (!max1133daq_stop (daq)) {
-            fprintf (stderr, "Could not stop comedi acquisition\n");
+        if (!max1133daq_reset (daq)) {
+            fprintf (stderr, "Could not stop data acquisition\n");
             return FALSE;
         }
     }

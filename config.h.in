@@ -3,5 +3,4 @@
 #mesondefine PACKAGE_VERSION
 #mesondefine PACKAGE_COPYRIGHT
 
-#mesondefine USE_COMEDI
-#mesondefine USE_MAX1133
+#define LBS_UNUSED __attribute__ ((unused))

@@ -34,6 +34,7 @@ fftw3_dep  = dependency('fftw3')
 thread_dep = dependency('threads')
 glib_dep = dependency('glib-2.0')
 math_lib = compiler.find_library('m')
+bcm2835_lib = compiler.find_library('bcm2835')
 
 if not compiler.has_header('linux/spi/spidev.h')
     error('Unable to find "spidev.h" header. Are you running Linux with SPI enabled and headers installed?')
@@ -76,5 +77,18 @@ executable('labrstim',
            dependencies: [fftw3_dep,
                           thread_dep,
                           glib_dep,
-                          math_lib]
+                          math_lib,
+                          bcm2835_lib]
+)
+
+executable('test_daq_speed',
+           ['src/max1133daq.h',
+            'src/max1133daq.c',
+            'src/timespec-utils.h',
+            'src/timespec-utils.c',
+            'tests/daq_speedtest.c'],
+           dependencies: [thread_dep,
+                          glib_dep,
+                          math_lib,
+                          bcm2835_lib]
 )
