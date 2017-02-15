@@ -1,0 +1,16 @@
+#
+# ADC drivers
+#
+# When adding new entries keep the list in alphabetical order
+
+menu "Analog to digital converters"
+
+config MAX1133
+	tristate "Maxim MAX1133 ADC Driver"
+	depends on SPI
+	select IIO_BUFFER
+	select IIO_TRIGGERED_BUFFER
+	help
+	  Blah!
+
+endmenu
