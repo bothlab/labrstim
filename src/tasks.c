@@ -27,7 +27,7 @@
 #include "defaults.h"
 #include "fftw-functions.h"
 #include "data-file-si.h"
-#include "timespec-utils.h"
+#include "utils.h"
 #include "max1133daq.h"
 #include "stimpulse.h"
 
@@ -85,7 +85,7 @@ perform_train_stimulation (gboolean random, double trial_duration_sec, double pu
     /* initialize the stimulation GPIO pins */
     stimpulse_gpio_init ();
 
-    tk.elapsed_beginning_trial = diff (&tk.time_beginning_trial, &tk.time_now);
+    tk.elapsed_beginning_trial = time_diff (&tk.time_beginning_trial, &tk.time_now);
     while (tk.elapsed_beginning_trial.tv_sec < tk.trial_duration_sec) { // loop until the trial is over
         clock_gettime (CLOCK_REALTIME, &tk.time_last_stimulation);
 
@@ -100,7 +100,7 @@ perform_train_stimulation (gboolean random, double trial_duration_sec, double pu
         // get time now and the actual pulse duration
         clock_gettime (CLOCK_REALTIME, &tk.time_end_last_stimulation);
         tk.actual_pulse_duration =
-            diff (&tk.time_last_stimulation, &tk.time_end_last_stimulation);
+            time_diff (&tk.time_last_stimulation, &tk.time_end_last_stimulation);
         if (random) {
             // if doing random stimulation, get the next interval
             tk.inter_pulse_duration_ms =
@@ -112,7 +112,7 @@ perform_train_stimulation (gboolean random, double trial_duration_sec, double pu
         fprintf (stderr, "interval: %lf ms\n", tk.inter_pulse_duration_ms);
         // calculate how long we need to sleep until the next pulse
         tk.end_to_start_pulse_duration =
-            diff (&tk.actual_pulse_duration, &tk.inter_pulse_duration);
+            time_diff (&tk.actual_pulse_duration, &tk.inter_pulse_duration);
 
         // sleep until the next pulse, note that this will overshoot by the time of 4 lines of code! (almost nothing)
         nanosleep (&tk.end_to_start_pulse_duration, &tk.req);
@@ -120,7 +120,7 @@ perform_train_stimulation (gboolean random, double trial_duration_sec, double pu
         // get the time since the beginning of the trial
         clock_gettime (CLOCK_REALTIME, &tk.time_now);
         tk.elapsed_beginning_trial =
-            diff (&tk.time_beginning_trial, &tk.time_now);
+            time_diff (&tk.time_beginning_trial, &tk.time_now);
     }
 
     return TRUE;
@@ -210,7 +210,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
     clock_gettime (CLOCK_REALTIME, &tk.time_now);
     clock_gettime (CLOCK_REALTIME, &tk.time_last_stimulation);
     tk.elapsed_beginning_trial =
-        diff (&tk.time_beginning_trial, &tk.time_now);
+        time_diff (&tk.time_beginning_trial, &tk.time_now);
 
     /* initialize the stimulation GPIO pins */
     stimpulse_gpio_init ();
@@ -288,7 +288,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
 #ifdef DEBUG_THETA
         clock_gettime (CLOCK_REALTIME, &tk.time_current_new_data);
         tk.duration_previous_current_new_data =
-            diff (&tk.time_previous_new_data, &tk.time_current_new_data);
+            time_diff (&tk.time_previous_new_data, &tk.time_current_new_data);
         fprintf (stderr,
                  "%ld, last_sample_no: %ld  with interval %lf(us)\n",
                  counter++, last_sample_no,
@@ -315,7 +315,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
         if (theta_delta_ratio > THETA_DELTA_RATIO) {
             clock_gettime (CLOCK_REALTIME, &tk.time_now);
             tk.elapsed_last_acquired_data =
-                diff (&tk.time_last_acquired_data, &tk.time_now);
+                time_diff (&tk.time_last_acquired_data, &tk.time_now);
             // get the phase
             current_phase =
                 fftw_interface_theta_get_phase (&fftw_inter,
@@ -343,7 +343,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
                 }
                 clock_gettime (CLOCK_REALTIME, &tk.time_now);
                 tk.elapsed_last_stimulation =
-                    diff (&tk.time_last_stimulation, &tk.time_now);
+                    time_diff (&tk.time_last_stimulation, &tk.time_now);
 
                 // if the laser refractory period is over
                 if (tk.elapsed_last_stimulation.tv_nsec >
@@ -375,13 +375,13 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
 
         clock_gettime (CLOCK_REALTIME, &tk.time_now);
         tk.elapsed_last_acquired_data =
-            diff (&tk.time_last_acquired_data, &tk.time_now);
+            time_diff (&tk.time_last_acquired_data, &tk.time_now);
 
         // will stop the trial
         //            tk.elapsed_beginning_trial.tv_sec = tk.trial_duration_sec;
         clock_gettime (CLOCK_REALTIME, &tk.time_now);
         tk.elapsed_beginning_trial =
-            diff (&tk.time_beginning_trial, &tk.time_now);
+            time_diff (&tk.time_beginning_trial, &tk.time_now);
     }
 
     /* this will stop the acquisition thread */
@@ -493,7 +493,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
     clock_gettime (CLOCK_REALTIME, &tk.time_now);
     clock_gettime (CLOCK_REALTIME, &tk.time_last_stimulation);
     tk.elapsed_beginning_trial =
-        diff (&tk.time_beginning_trial, &tk.time_now);
+        time_diff (&tk.time_beginning_trial, &tk.time_now);
     tk.duration_refractory_period = set_timespec_from_ms (swr_refractory);    // set the refractory period for stimulation
 
     // loop until the time is over
@@ -632,7 +632,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
             // get the current time for refractory period
             clock_gettime (CLOCK_REALTIME, &tk.time_now);
             tk.elapsed_last_stimulation =
-                diff (&tk.time_last_stimulation, &tk.time_now);
+                time_diff (&tk.time_last_stimulation, &tk.time_now);
 
             if ((swr_power > swr_power_threshold && swr_convolution_peak > swr_convolution_peak_threshold) && /* if power is large enough and refractory over */
                 (tk.elapsed_last_stimulation.tv_nsec >
@@ -696,14 +696,14 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
 
         /* sleep so that the interval between two calculation of power is approximately tk.interval_duration_between_swr_processing */
         clock_gettime (CLOCK_REALTIME, &tk.time_now);
-        tk.elapsed_from_acquisition = diff (&tk.time_last_acquired_data, &tk.time_now);
-        tk.duration_sleep_between_swr_processing = diff (&tk.elapsed_from_acquisition, &tk.interval_duration_between_swr_processing);
+        tk.elapsed_from_acquisition = time_diff (&tk.time_last_acquired_data, &tk.time_now);
+        tk.duration_sleep_between_swr_processing = time_diff (&tk.elapsed_from_acquisition, &tk.interval_duration_between_swr_processing);
         nanosleep (&tk.duration_sleep_between_swr_processing, &tk.req);
-        tk.elapsed_beginning_trial = diff (&tk.time_beginning_trial, &tk.time_now);
+        tk.elapsed_beginning_trial = time_diff (&tk.time_beginning_trial, &tk.time_now);
 
 #ifdef DEBUG_SWR
         tk.duration_previous_current_new_data =
-            diff (&tk.time_previous_new_data, &tk.time_last_acquired_data);
+            time_diff (&tk.time_previous_new_data, &tk.time_last_acquired_data);
         tk.time_previous_new_data = tk.time_last_acquired_data;
         fprintf (stderr,
                  "1check no: %ld, last_sample_no: %ld  sleep time: %.2lf (us), processing time: %.2lf, diff_between_two_get_data: %.2lf power: %.2lf threshold: %.2lf convolution_peak: %.2lf\n",

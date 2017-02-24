@@ -1,2 +1,5 @@
-option('maintainer', type : 'boolean', value : false)
-option('optimize', type : 'boolean', value : true)
+option('maintainer', type : 'boolean', value: false)
+option('optimize', type : 'boolean', value: true)
+
+option('debug_print', type : 'boolean', value: false)
+option('simulate_data', type : 'boolean', value: false)

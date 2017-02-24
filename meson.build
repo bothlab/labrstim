@@ -15,8 +15,8 @@ labrstim_src = [
     'src/fftw-functions.c',
     'src/data-file-si.h',
     'src/data-file-si.c',
-    'src/timespec-utils.h',
-    'src/timespec-utils.c',
+    'src/utils.h',
+    'src/utils.c',
     'src/tasks.h',
     'src/tasks.c',
     'src/max1133daq.h',
@@ -48,6 +48,14 @@ conf = configuration_data()
 conf.set_quoted('PACKAGE_NAME', 'LaBrStim')
 conf.set_quoted('PACKAGE_VERSION', labrstim_version)
 conf.set_quoted('PACKAGE_COPYRIGHT', labrstim_copyright)
+
+conf.set('SIMULATE_DATA', get_option('simulate_data'))
+if get_option('debug_print')
+    conf.set('DEBUG_PRINT', 1)
+else
+    conf.set('DEBUG_PRINT', 0)
+endif
+
 
 configure_file(input: 'config.h.in',
                output: 'config.h',
@@ -81,12 +89,12 @@ executable('labrstim',
                           bcm2835_lib]
 )
 
-executable('test_daq_speed',
+executable('test-maxdaq',
            ['src/max1133daq.h',
             'src/max1133daq.c',
-            'src/timespec-utils.h',
-            'src/timespec-utils.c',
-            'tests/daq_speedtest.c'],
+            'src/utils.h',
+            'src/utils.c',
+            'tests/test-maxdaq.c'],
            dependencies: [thread_dep,
                           glib_dep,
                           math_lib,

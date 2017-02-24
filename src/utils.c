@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "timespec-utils.h"
+#include "utils.h"
 
 struct timespec set_timespec_from_ms (double milisec)
 {
@@ -32,7 +32,7 @@ struct timespec set_timespec_from_ms (double milisec)
     return temp;
 }
 
-struct timespec diff (struct timespec* start, struct timespec* end)
+struct timespec time_diff (struct timespec* start, struct timespec* end)
 {
     // get the time difference between two times
     struct timespec temp;

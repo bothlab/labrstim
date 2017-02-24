@@ -21,7 +21,9 @@
 #ifndef __LS_TIMESPEC_UTILS_H
 #define __LS_TIMESPEC_UTILS_H
 
+#include "config.h"
 #include <time.h>
+#include <glib.h>
 
 /**
  * TimeKeeper:
@@ -70,8 +72,12 @@ typedef struct
     // double nano_comp_ms=NANOSLEEP_OVERSHOOT;
 } TimeKeeper;
 
-struct timespec set_timespec_from_ms(double milisec);
-struct timespec diff(struct timespec* start, struct timespec* end);
-int microsecond_from_timespec(struct timespec* duration);
+struct timespec set_timespec_from_ms (double milisec);
+struct timespec time_diff (struct timespec* start,
+                      struct timespec* end);
+int microsecond_from_timespec (struct timespec* duration);
+
+#define debugln(fmt, ...) \
+            do { if (DEBUG_PRINT) g_debug (fmt, __VA_ARGS__); } while (0)
 
 #endif /* __LS_TIMESPEC_UTILS_H */

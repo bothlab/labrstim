@@ -31,10 +31,9 @@
 #include <fcntl.h>
 #include <bcm2835.h>
 
-#include "timespec-utils.h"
+#include "utils.h"
 
 #define BIT(x) (1UL << x)
-
 
 #define MAX1133_START       BIT(7) /* start byte */
 #define MAX1133_UNIPOLAR    BIT(6) /* unipolar mode if set, bipolar if not set */
@@ -51,10 +50,10 @@ static uint8_t max1133_mux_channel_map[8] = {
     0,
     MAX1133_P0,
     MAX1133_P1,
-    MAX1133_P2,
     MAX1133_P0 | MAX1133_P1,
-    MAX1133_P1 | MAX1133_P2,
+    MAX1133_P2,
     MAX1133_P0 | MAX1133_P2,
+    MAX1133_P1 | MAX1133_P2,
     MAX1133_P0 | MAX1133_P1 | MAX1133_P2
 };
 
@@ -217,18 +216,39 @@ daq_thread_main (void *daq_ptr)
         /* retrieve data from all channels */
         for (i = 0; i < daq->channel_count; i++) {
             uint8_t txbuf = MAX1133_START;
+            int chan;
 
             if (i < 8) {
+                if (i == 0) {
+                    if (daq->channel_count >= 8)
+                        chan = 7;
+                    else
+                        chan = daq->channel_count - 1;
+                } else {
+                    chan = i - 1;
+                }
                 txbuf |= max1133_mux_channel_map[i];
                 /* TODO: Set CS */
             } else {
+                if ((i - 8) == 0) {
+                    chan = daq->channel_count - 1;
+                } else {
+                    chan = i - 1;
+                }
                 txbuf |= max1133_mux_channel_map[i - 8];
                 /* TODO: Set CS */
             }
 
+#ifndef SIMULATE_DATA
             /* synchronous SPI query, two bytes received and stored in int16_t */
             bcm2835_spi_transfernb ((char*) &txbuf, (char*) &rxval, sizeof(int16_t));
-            data_buffer_push_data (daq->buffer[i], rxval);
+#else
+            if ((chan % 2) == 0)
+                rxval = rand () % (600 * (chan + 1));
+            else
+                rxval = (rand () % (600 * (chan + 1))) * -1;
+#endif
+            data_buffer_push_data (daq->buffer[chan], rxval);
         }
 
         if (clock_gettime (CLOCK_REALTIME, &stop) == -1 ) {
@@ -283,6 +303,7 @@ max1133daq_new (guint channel_count, size_t buffer_capacity)
     daq->channel_count = channel_count;
 
     /* initialize bcm2835 interface */
+#ifndef SIMULATE_DATA
     if (!bcm2835_init ()) {
       g_error ("bcm2835_init failed. Is the software running on the right CPU?");
       max1133daq_free (daq);
@@ -294,6 +315,9 @@ max1133daq_new (guint channel_count, size_t buffer_capacity)
       max1133daq_free (daq);
       return NULL;
     }
+#else
+    srand (time(NULL));
+#endif
 
 	return daq;
 }
@@ -314,8 +338,10 @@ max1133daq_free (Max1133Daq *daq)
 
     g_slice_free (Max1133Daq, daq);
 
+#ifndef SIMULATE_DATA
     bcm2835_spi_end ();
     bcm2835_close ();
+#endif
 }
 
 /**
@@ -344,11 +370,13 @@ max1133daq_acquire_data (Max1133Daq *daq, size_t sample_count)
     max1133daq_reset (daq);
 
     /* set up BCM2835 */
+#ifndef SIMULATE_DATA
     bcm2835_spi_setBitOrder(BCM2835_SPI_BIT_ORDER_MSBFIRST);
     bcm2835_spi_setDataMode(BCM2835_SPI_MODE0);
     bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_128); /* the right clock divider for RasPi 3 B+ */
     bcm2835_spi_chipSelect(BCM2835_SPI_CS0); /* chip-select 0 */
     bcm2835_spi_setChipSelectPolarity(BCM2835_SPI_CS0, LOW);
+#endif
 
     daq->sample_max_count = sample_count;
     daq->running = TRUE;
