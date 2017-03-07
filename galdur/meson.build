@@ -8,14 +8,50 @@ compiler = meson.get_compiler('c')
 #
 galdur_src = [
     'bcm2835.h',
-    'bcm2835.c'
+    'bcm2835.c',
+    'gld-utils.h',
+    'gld-utils.c',
+    'gld-adc.h',
+    'gld-adc.c'
 ]
+
+#
+# Configuration
+#
+
+conf = configuration_data()
+conf.set_quoted('PACKAGE_NAME', 'Galdur')
+conf.set_quoted('PACKAGE_VERSION', labrstim_version)
+conf.set_quoted('PACKAGE_COPYRIGHT', galdur_copyright)
+
+conf.set('SIMULATE_DATA', get_option('simulate_data'))
+if get_option('debug_print')
+    conf.set('DEBUG_PRINT', 1)
+else
+    conf.set('DEBUG_PRINT', 0)
+endif
+
+configure_file(input: '../config.h.in',
+               output: 'config.h',
+               configuration: conf
+)
 
 #
 # Targets
 #
 galdur_lib = static_library('galdur',
            [galdur_src],
+           dependencies: [thread_dep,
+                          glib_dep,
+                          math_lib]
+)
+
+#
+# Tests
+#
+executable('test-maxdaq',
+           [galdur_src,
+            'tests/test-maxdaq.c'],
            dependencies: [thread_dep,
                           glib_dep,
                           math_lib]

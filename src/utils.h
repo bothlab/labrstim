@@ -72,11 +72,6 @@ typedef struct
     // double nano_comp_ms=NANOSLEEP_OVERSHOOT;
 } TimeKeeper;
 
-struct timespec set_timespec_from_ms (double milisec);
-struct timespec time_diff (struct timespec* start,
-                      struct timespec* end);
-int microsecond_from_timespec (struct timespec* duration);
-
 #define debugln(fmt, ...) \
             do { if (DEBUG_PRINT) g_debug (fmt, __VA_ARGS__); } while (0)
 

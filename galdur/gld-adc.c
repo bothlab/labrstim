@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "max1133daq.h"
+#include "gld-adc.h"
 #include "config.h"
 
 #include <glib.h>
@@ -29,9 +29,9 @@
 #include <sys/ioctl.h>
 #include <linux/ioctl.h>
 #include <fcntl.h>
-#include <bcm2835.h>
 
-#include "utils.h"
+#include "bcm2835.h"
+#include "gld-utils.h"
 
 #define BIT(x) (1UL << x)
 
@@ -203,7 +203,7 @@ daq_thread_main (void *daq_ptr)
 
     size_t sample_count = 0;
 
-    max_delay_time = set_timespec_from_ms (1000 / daq->acq_frequency);
+    max_delay_time = gld_set_timespec_from_ms (1000 / daq->acq_frequency);
     while (daq->running) {
         int16_t rxval = 0;
         guint i;

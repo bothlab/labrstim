@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2017 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU General Public License Version 3
  *
@@ -17,8 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LS_MAX1133_DAQ_H
-#define __LS_MAX1133_DAQ_H
+#ifndef __GLD_DAQ_H
+#define __GLD_DAQ_H
 
 #include <glib.h>
 #include <stdint.h>
@@ -51,4 +51,4 @@ gboolean        max1133daq_get_data (Max1133Daq *daq,
                                      int16_t *data);
 
 
-#endif /* __LS_MAX1133_DAQ_H */
+#endif /* __GLD_DAQ_H */

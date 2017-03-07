@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2010 Kevin Allen
- * Copyright (C) 2016 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2017 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU General Public License Version 3
  *
@@ -18,5 +17,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "utils.h"
+#ifndef __GLD_UTILS_H
+#define __GLD_UTILS_H
 
+#include "config.h"
+#include <time.h>
+#include <glib.h>
+
+struct timespec gld_set_timespec_from_ms (double milisec);
+struct timespec gld_time_diff (struct timespec* start,
+                      struct timespec* end);
+int gld_microsecond_from_timespec (struct timespec* duration);
+
+#define debugln(fmt, ...) \
+            do { if (DEBUG_PRINT) g_debug (fmt, __VA_ARGS__); } while (0)
+
+#endif /* __GLD_UTILS_H */

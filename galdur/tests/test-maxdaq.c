@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "../src/max1133daq.h"
+#include "gld-adc.h"
 
 static gulong SAMPLE_COUNT  = 1000 * 124;
 static guint  CHANNEL_COUNT = 16;

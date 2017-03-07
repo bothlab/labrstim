@@ -19,8 +19,6 @@ labrstim_src = [
     'src/utils.c',
     'src/tasks.h',
     'src/tasks.c',
-    'src/max1133daq.h',
-    'src/max1133daq.c',
     'src/gpio.h',
     'src/gpio.c',
     'src/stimpulse.h',
@@ -87,18 +85,6 @@ executable('labrstim',
            [labrstim_src],
            dependencies: [fftw3_dep,
                           thread_dep,
-                          glib_dep,
-                          math_lib,
-                          galdur_dep]
-)
-
-executable('test-maxdaq',
-           ['src/max1133daq.h',
-            'src/max1133daq.c',
-            'src/utils.h',
-            'src/utils.c',
-            'tests/test-maxdaq.c'],
-           dependencies: [thread_dep,
                           glib_dep,
                           math_lib,
                           galdur_dep]
