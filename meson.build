@@ -34,11 +34,6 @@ fftw3_dep  = dependency('fftw3')
 thread_dep = dependency('threads')
 glib_dep = dependency('glib-2.0')
 math_lib = compiler.find_library('m')
-bcm2835_lib = compiler.find_library('bcm2835')
-
-if not compiler.has_header('linux/spi/spidev.h')
-    error('Unable to find "spidev.h" header. Are you running Linux with SPI enabled and headers installed?')
-endif
 
 #
 # Configuration
@@ -76,6 +71,14 @@ if (get_option('optimize'))
     add_global_arguments(['-O3', '-march=native'], language: 'c')
 endif
 
+#
+# Subdirs
+#
+subdir('galdur')
+galdur_dep = declare_dependency(link_with: galdur_lib,
+                                include_directories: include_directories('galdur')
+)
+
 
 #
 # Targets
@@ -86,7 +89,7 @@ executable('labrstim',
                           thread_dep,
                           glib_dep,
                           math_lib,
-                          bcm2835_lib]
+                          galdur_dep]
 )
 
 executable('test-maxdaq',
@@ -98,5 +101,7 @@ executable('test-maxdaq',
            dependencies: [thread_dep,
                           glib_dep,
                           math_lib,
-                          bcm2835_lib]
+                          galdur_dep]
 )
+
+message('This program will only run on Raspberry Pi 3 hardware with the Galdur board. Do not run it on different hardware!')
