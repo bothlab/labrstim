@@ -109,7 +109,8 @@ int main(int argc, char **argv)
     }
 
     if (opt_base_filename == NULL) {
-        g_print ("No base filename given, storing data in '/tmp/galdur-adc-<chan>.csv'.");
+        g_print ("No base filename given, storing data in '/tmp/galdur-adc-<chan>.csv'.\n");
+        g_print ("\n");
         opt_base_filename = g_strdup ("/tmp/galdur-adc-");
     }
 
