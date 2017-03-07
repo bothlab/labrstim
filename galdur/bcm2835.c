@@ -114,7 +114,7 @@ uint32_t bcm2835_peri_read(volatile uint32_t* paddr)
     uint32_t ret;
     if (debug)
     {
-        printf("bcm2835_peri_read  paddr %08X\n", (unsigned) paddr);
+        printf("bcm2835_peri_read  paddr %p\n", paddr);
 	return 0;
     }
     else
@@ -136,7 +136,7 @@ uint32_t bcm2835_peri_read_nb(volatile uint32_t* paddr)
 {
     if (debug)
     {
-	printf("bcm2835_peri_read_nb  paddr %08X\n", (unsigned) paddr);
+	printf("bcm2835_peri_read_nb  paddr %p\n", paddr);
 	return 0;
     }
     else
@@ -152,7 +152,7 @@ void bcm2835_peri_write(volatile uint32_t* paddr, uint32_t value)
 {
     if (debug)
     {
-	printf("bcm2835_peri_write paddr %08X, value %08X\n", (unsigned) paddr, value);
+	printf("bcm2835_peri_write paddr %p, value %08X\n", paddr, value);
     }
     else
     {
@@ -167,8 +167,8 @@ void bcm2835_peri_write_nb(volatile uint32_t* paddr, uint32_t value)
 {
     if (debug)
     {
-	printf("bcm2835_peri_write_nb paddr %08X, value %08X\n",
-               (unsigned) paddr, value);
+	printf("bcm2835_peri_write_nb paddr %p, value %08X\n",
+               paddr, value);
     }
     else
     {
@@ -406,8 +406,8 @@ void bcm2835_gpio_pudclk(uint8_t pin, uint8_t on)
 /* Read GPIO pad behaviour for groups of GPIOs */
 uint32_t bcm2835_gpio_pad(uint8_t group)
 {
-  if (bcm2835_pads == MAP_FAILED)
-    return 0;
+    if (bcm2835_pads == MAP_FAILED)
+        return 0;
   
     volatile uint32_t* paddr = bcm2835_pads + BCM2835_PADS_GPIO_0_27/4 + group;
     return bcm2835_peri_read(paddr);
@@ -419,8 +419,8 @@ uint32_t bcm2835_gpio_pad(uint8_t group)
 */
 void bcm2835_gpio_set_pad(uint8_t group, uint32_t control)
 {
-  if (bcm2835_pads == MAP_FAILED)
-    return;
+    if (bcm2835_pads == MAP_FAILED)
+        return;
   
     volatile uint32_t* paddr = bcm2835_pads + BCM2835_PADS_GPIO_0_27/4 + group;
     bcm2835_peri_write(paddr, control | BCM2835_PAD_PASSWRD);
@@ -447,7 +447,7 @@ void bcm2835_delayMicroseconds(uint64_t micros)
     if (debug)
     {
 	/* Cant access sytem timers in debug mode */
-	printf("bcm2835_delayMicroseconds %lld\n", micros);
+	printf("bcm2835_delayMicroseconds %lu\n", micros);
 	return;
     }
 
