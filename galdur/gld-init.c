@@ -34,23 +34,29 @@ gld_cpu_is_valid (void)
     gchar *line = NULL;
     size_t len = 0;
     ssize_t read;
+    gboolean ret = FALSE;
 
     fp = fopen ("/proc/cpuinfo", "r");
     if (fp == NULL)
         return FALSE;
 
     while ((read = getline(&line, &len, fp)) != -1) {
-        if (g_str_has_prefix (line, "model name")) {
-            g_print (line);
-            return TRUE;
+        if (g_str_has_prefix (line, "Hardware")) {
+            if (g_strrstr (line, "BCM2835") != NULL) {
+                ret = TRUE;
+                goto out;
+            }
+
+            g_debug ("CPU Hardware: %s", line);
         }
     }
 
+out:
     fclose (fp);
     if (line)
         g_free (line);
 
-    return FALSE;
+    return ret;
 }
 
 /**
@@ -66,20 +72,20 @@ gld_board_initialize (void)
         return FALSE;
     }
 
-    /* set up BCM2835 */
-    bcm2835_spi_setBitOrder(BCM2835_SPI_BIT_ORDER_MSBFIRST);
-    bcm2835_spi_setDataMode(BCM2835_SPI_MODE0);
-    bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_128); /* the right clock divider for RasPi 3 B+ */
-    bcm2835_spi_chipSelect(BCM2835_SPI_CS0); /* chip-select 0 */
-    bcm2835_spi_setChipSelectPolarity(BCM2835_SPI_CS0, LOW);
-
     if (!bcm2835_init ()) {
       g_error ("bcm2835_init failed. Is the software running on the right CPU and with appropriate permissions?");
       return FALSE;
     }
 
-    if (!bcm2835_spi_begin ()) {
-      g_error ("bcm2835_spi_begin failed. Is the software running on the right CPU?");
+    /* set up BCM2835 */
+    bcm2835_spi0_setBitOrder(BCM2835_SPI_BIT_ORDER_MSBFIRST);
+    bcm2835_spi0_setDataMode(BCM2835_SPI_MODE0);
+    bcm2835_spi0_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_128); /* the right clock divider for RasPi 3 B+ */
+    bcm2835_spi0_chipSelect(BCM2835_SPI_CS0); /* chip-select 0 */
+    bcm2835_spi0_setChipSelectPolarity(BCM2835_SPI_CS0, LOW);
+
+    if (!bcm2835_spi0_begin ()) {
+      g_error ("bcm2835_spi0_begin failed. Is the software running on the right CPU?");
       return FALSE;
     }
 
@@ -99,6 +105,6 @@ gld_board_initialize (void)
 void
 gld_board_shutdown (void)
 {
-    bcm2835_spi_end ();
+    bcm2835_spi0_end ();
     bcm2835_close ();
 }

@@ -58,6 +58,10 @@ executable('galdur-adc',
            ['tools/galdur-adc.c'],
            dependencies: [galdur_dep]
 )
+executable('galdur-blink',
+           ['tools/galdur-blink.c'],
+           dependencies: [galdur_dep]
+)
 
 #
 # Tests

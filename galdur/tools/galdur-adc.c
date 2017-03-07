@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2017 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU General Public License Version 3
  *
@@ -104,7 +104,7 @@ int main(int argc, char **argv)
     g_option_context_add_main_entries (octx, option_entries, NULL);
     g_option_context_set_help_enabled (octx, TRUE);
     if (!g_option_context_parse (octx, &argc, &argv, &error)) {
-        g_printerr ("option parsing failed: %s\n", error->message);
+        g_printerr ("Option parsing failed: %s\n", error->message);
         return 1;
     }
 
