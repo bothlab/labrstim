@@ -228,7 +228,9 @@ daq_thread_main (void *daq_ptr)
                     chan = i - 1;
                 }
                 txbuf |= max1133_mux_channel_map[i];
-                /* TODO: Set CS */
+
+                /* select MAX 1133 1 */
+                bcm2835_spi0_chipSelect(BCM2835_SPI_CS0);
             } else {
                 if ((i - 8) == 0) {
                     chan = daq->channel_count - 1;
@@ -236,12 +238,14 @@ daq_thread_main (void *daq_ptr)
                     chan = i - 1;
                 }
                 txbuf |= max1133_mux_channel_map[i - 8];
-                /* TODO: Set CS */
+
+                /* select MAX 1133 2 */
+                bcm2835_spi0_chipSelect(BCM2835_SPI_CS1);
             }
 
 #ifndef SIMULATE_DATA
             /* synchronous SPI query, two bytes received and stored in int16_t */
-            bcm2835_spi_transfernb ((char*) &txbuf, (char*) &rxval, sizeof(int16_t));
+            bcm2835_spi0_transfernb ((char*) &txbuf, (char*) &rxval, sizeof(int16_t));
 #else
             if ((chan % 2) == 0)
                 rxval = rand () % (600 * (chan + 1));
