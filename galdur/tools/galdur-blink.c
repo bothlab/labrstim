@@ -19,16 +19,26 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include "galdur.h"
 
 static guint opt_delay  = 500;
 
+
+static volatile gboolean blink_running = TRUE;
+
+void
+handle_sigint (int dummy)
+{
+    blink_running = FALSE;
+}
+
 void
 run_status_led_blink ()
 {
     uint8_t status_val = GLD_GPIO_LOW;
-    while (TRUE) {
+    while (blink_running) {
         status_val = ~status_val;
         gld_status_led_set (status_val);
         usleep (opt_delay * 1000);
@@ -60,8 +70,10 @@ int main(int argc, char **argv)
     if (!gld_board_initialize ())
         return 1;
 
+    signal(SIGINT, handle_sigint);
     run_status_led_blink ();
 
+    gld_status_led_set (GLD_GPIO_LOW);
     gld_board_shutdown ();
     return 0;
 }
