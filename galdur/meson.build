@@ -9,6 +9,8 @@ compiler = meson.get_compiler('c')
 galdur_src = [
     'bcm2835.h',
     'bcm2835.c',
+    'gld-init.h',
+    'gld-init.c',
     'gld-utils.h',
     'gld-utils.c',
     'gld-adc.h',
@@ -44,6 +46,15 @@ galdur_lib = static_library('galdur',
            dependencies: [thread_dep,
                           glib_dep,
                           math_lib]
+)
+galdur_dep = declare_dependency(link_with: galdur_lib,
+                                include_directories: include_directories('.'),
+                                dependencies: [glib_dep, thread_dep]
+)
+
+executable('galdur-adc',
+           ['tools/galdur-adc.c'],
+           dependencies: [galdur_dep]
 )
 
 #

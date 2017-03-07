@@ -32,21 +32,21 @@ typedef struct
 
     guint acq_frequency;
     size_t sample_max_count;
-} Max1133Daq;
+} GldAdc;
 
-Max1133Daq      *max1133daq_new (guint channel_count,
+GldAdc      *gld_adc_new (guint channel_count,
                                  size_t buffer_capacity);
-void            max1133daq_free (Max1133Daq *daq);
+void            gld_adc_free (GldAdc *daq);
 
-void            max1133daq_set_acq_frequency (Max1133Daq *daq,
+void            gld_adc_set_acq_frequency (GldAdc *daq,
                                               guint hz);
 
-gboolean        max1133daq_acquire_data (Max1133Daq *daq,
+gboolean        gld_adc_acquire_data (GldAdc *daq,
                                          size_t sample_count);
-gboolean        max1133daq_reset (Max1133Daq *daq);
-gboolean        max1133daq_is_running (Max1133Daq *daq);
+gboolean        gld_adc_reset (GldAdc *daq);
+gboolean        gld_adc_is_running (GldAdc *daq);
 
-gboolean        max1133daq_get_data (Max1133Daq *daq,
+gboolean        gld_adc_get_data (GldAdc *daq,
                                      guint channel,
                                      int16_t *data);
 

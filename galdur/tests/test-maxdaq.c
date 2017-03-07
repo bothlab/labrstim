@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "gld-adc.h"
+#include "galdur.h"
 
 static gulong SAMPLE_COUNT  = 1000 * 124;
 static guint  CHANNEL_COUNT = 16;
@@ -14,21 +14,21 @@ test_daq_speed ()
 {
     struct timespec start, stop;
     struct timespec diff;
-    Max1133Daq *daq;
+    GldAdc *daq;
     guint i;
 
     g_print ("Reading %lu samples from %u channels at %luHz.\n",
             SAMPLE_COUNT, CHANNEL_COUNT, SAMPLE_FREQUENCY);
 
-    daq = max1133daq_new (CHANNEL_COUNT, SAMPLE_COUNT);
+    daq = gld_adc_new (CHANNEL_COUNT, SAMPLE_COUNT);
 
-    max1133daq_set_acq_frequency (daq, SAMPLE_FREQUENCY);
+    gld_adc_set_acq_frequency (daq, SAMPLE_FREQUENCY);
 
     clock_gettime(CLOCK_REALTIME, &start);
 
-    max1133daq_acquire_data (daq, SAMPLE_COUNT);
+    gld_adc_acquire_data (daq, SAMPLE_COUNT);
 
-    while (max1133daq_is_running (daq)) {}
+    while (gld_adc_is_running (daq)) {}
 
     clock_gettime(CLOCK_REALTIME, &stop);
 
@@ -49,7 +49,7 @@ test_daq_speed ()
             break;
         }
 
-        while (max1133daq_get_data (daq, i, &data))
+        while (gld_adc_get_data (daq, i, &data))
             fprintf (f, "%i\n", data);
         fclose (f);
     }
@@ -57,15 +57,15 @@ test_daq_speed ()
     g_print ("Required time: %zu(sec) + %zu(nsec)\n", diff.tv_sec, diff.tv_nsec);
     g_print ("Sampled data written to /tmp\n");
 
-    max1133daq_free (daq);
+    gld_adc_free (daq);
 }
 
 void
 test_daq_ringbuf ()
 {
-    Max1133Daq *daq;
+    GldAdc *daq;
     guint i;
-    gboolean data_available;
+    gboolean data_available = TRUE;
     g_autofree gchar *fname = NULL;
 
     fname = g_strdup ("/tmp/test_sampled-data-rbtest.csv");
@@ -73,11 +73,11 @@ test_daq_ringbuf ()
     g_print ("Reading %lu samples from %u channels at %luHz (ringbuffer test).\n",
             SAMPLE_COUNT, CHANNEL_COUNT, SAMPLE_FREQUENCY);
 
-    daq = max1133daq_new (CHANNEL_COUNT, SAMPLE_COUNT / 4);
+    daq = gld_adc_new (CHANNEL_COUNT, SAMPLE_COUNT / 4);
 
-    max1133daq_set_acq_frequency (daq, SAMPLE_FREQUENCY);
+    gld_adc_set_acq_frequency (daq, SAMPLE_FREQUENCY);
 
-    max1133daq_acquire_data (daq, SAMPLE_COUNT);
+    gld_adc_acquire_data (daq, SAMPLE_COUNT);
 
     FILE *f = fopen (fname, "w");
     if (f == NULL) {
@@ -85,12 +85,12 @@ test_daq_ringbuf ()
         return;
     }
 
-    while (max1133daq_is_running (daq) || data_available) {
+    while (gld_adc_is_running (daq) || data_available) {
         data_available = FALSE;
         for (i = 0; i < CHANNEL_COUNT; i++) {
             int16_t data;
 
-            if (max1133daq_get_data (daq, i, &data)) {
+            if (gld_adc_get_data (daq, i, &data)) {
                 data_available = TRUE;
                 fprintf(f, "%i;", data);
             }
@@ -102,14 +102,18 @@ test_daq_ringbuf ()
     fclose (f);
     g_print ("Sampled data written to /tmp\n");
 
-    max1133daq_free (daq);
+    gld_adc_free (daq);
 }
 
 int main(int argc, char **argv)
 {
+    if (!gld_board_initialize ())
+        return 1;
+
     test_daq_speed ();
 
     test_daq_ringbuf ();
 
+    gld_board_shutdown ();
     return 0;
 }

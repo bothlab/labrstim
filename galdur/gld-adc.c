@@ -194,7 +194,7 @@ data_buffer_pull_data (DataBuffer *dbuf, int16_t *data)
 static void*
 daq_thread_main (void *daq_ptr)
 {
-    Max1133Daq *daq = (Max1133Daq*) daq_ptr;
+    GldAdc *daq = (GldAdc*) daq_ptr;
     struct timespec start, stop;
     struct timespec daq_time;
 
@@ -279,12 +279,12 @@ daq_thread_main (void *daq_ptr)
 }
 
 /**
- * max1133daq_new:
+ * gld_adc_new:
  */
-Max1133Daq*
-max1133daq_new (guint channel_count, size_t buffer_capacity)
+GldAdc*
+gld_adc_new (guint channel_count, size_t buffer_capacity)
 {
-    Max1133Daq *daq;
+    GldAdc *daq;
     guint i;
 
     /* we don't support more than 16 channels */
@@ -293,7 +293,7 @@ max1133daq_new (guint channel_count, size_t buffer_capacity)
     if (buffer_capacity <= 0)
         buffer_capacity = 65536;
 
-    daq = g_slice_new0 (Max1133Daq);
+    daq = g_slice_new0 (GldAdc);
     daq->acq_frequency = 20000; /* default to 20 kHz data acquisition speed */
 
     /* allocate buffer space */
@@ -302,20 +302,8 @@ max1133daq_new (guint channel_count, size_t buffer_capacity)
         daq->buffer[i] = data_buffer_new (buffer_capacity);
     daq->channel_count = channel_count;
 
-    /* initialize bcm2835 interface */
-#ifndef SIMULATE_DATA
-    if (!bcm2835_init ()) {
-      g_error ("bcm2835_init failed. Is the software running on the right CPU?");
-      max1133daq_free (daq);
-      return NULL;
-    }
-
-    if (!bcm2835_spi_begin ()) {
-      g_error ("bcm2835_spi_begin failed. Is the software running on the right CPU?");
-      max1133daq_free (daq);
-      return NULL;
-    }
-#else
+    /* initialize RNG if we are faking data */
+#ifdef SIMULATE_DATA
     srand (time(NULL));
 #endif
 
@@ -323,10 +311,10 @@ max1133daq_new (guint channel_count, size_t buffer_capacity)
 }
 
 /**
- * max1133daq_free:
+ * gld_adc_free:
  */
 void
-max1133daq_free (Max1133Daq *daq)
+gld_adc_free (GldAdc *daq)
 {
     guint i;
     g_return_if_fail (daq != NULL);
@@ -336,47 +324,33 @@ max1133daq_free (Max1133Daq *daq)
         data_buffer_free (daq->buffer[i]);
     g_free (daq->buffer);
 
-    g_slice_free (Max1133Daq, daq);
-
-#ifndef SIMULATE_DATA
-    bcm2835_spi_end ();
-    bcm2835_close ();
-#endif
+    g_slice_free (GldAdc, daq);
 }
 
 /**
- * max1133daq_set_acq_frequency:
+ * gld_adc_set_acq_frequency:
  */
 void
-max1133daq_set_acq_frequency (Max1133Daq *daq, guint hz)
+gld_adc_set_acq_frequency (GldAdc *daq, guint hz)
 {
     daq->acq_frequency = hz;
 }
 
 /**
- * max1133daq_acquire_data:
+ * gld_adc_acquire_data:
  * @sample_count: Number of samples to acquire
  *
  * acquire a fixed amount of samples. Data acquisition happens
  * in a background thread, the function will return immediately.
  */
 gboolean
-max1133daq_acquire_data (Max1133Daq *daq, size_t sample_count)
+gld_adc_acquire_data (GldAdc *daq, size_t sample_count)
 {
     int rc;
     g_assert (!daq->running);
 
     /* start with a fresh buffer, never append data */
-    max1133daq_reset (daq);
-
-    /* set up BCM2835 */
-#ifndef SIMULATE_DATA
-    bcm2835_spi_setBitOrder(BCM2835_SPI_BIT_ORDER_MSBFIRST);
-    bcm2835_spi_setDataMode(BCM2835_SPI_MODE0);
-    bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_128); /* the right clock divider for RasPi 3 B+ */
-    bcm2835_spi_chipSelect(BCM2835_SPI_CS0); /* chip-select 0 */
-    bcm2835_spi_setChipSelectPolarity(BCM2835_SPI_CS0, LOW);
-#endif
+    gld_adc_reset (daq);
 
     daq->sample_max_count = sample_count;
     daq->running = TRUE;
@@ -391,10 +365,10 @@ max1133daq_acquire_data (Max1133Daq *daq, size_t sample_count)
 }
 
 /**
- * max1133daq_reset:
+ * gld_adc_reset:
  */
 gboolean
-max1133daq_reset (Max1133Daq *daq)
+gld_adc_reset (GldAdc *daq)
 {
     guint i;
     daq->running = FALSE;
@@ -407,19 +381,19 @@ max1133daq_reset (Max1133Daq *daq)
 }
 
 /**
- * max1133daq_is_running:
+ * gld_adc_is_running:
  */
 gboolean
-max1133daq_is_running (Max1133Daq *daq)
+gld_adc_is_running (GldAdc *daq)
 {
     return daq->running;
 }
 
 /**
- * max1133daq_get_data:
+ * gld_adc_get_data:
  */
 gboolean
-max1133daq_get_data (Max1133Daq *daq, guint channel, int16_t *data)
+gld_adc_get_data (GldAdc *daq, guint channel, int16_t *data)
 {
     g_assert (channel < daq->channel_count);
     return data_buffer_pull_data (daq->buffer[channel], data);

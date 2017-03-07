@@ -73,10 +73,6 @@ endif
 # Subdirs
 #
 subdir('galdur')
-galdur_dep = declare_dependency(link_with: galdur_lib,
-                                include_directories: include_directories('galdur')
-)
-
 
 #
 # Targets

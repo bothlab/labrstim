@@ -23,10 +23,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <galdur.h>
 
 #include "defaults.h"
 #include "tasks.h"
 #include "stimpulse.h"
+
 
 /* misc */
 static const gchar *app_name = "labrstim";
@@ -135,8 +137,7 @@ main (int argc, char *argv[])
     /* parse our options */
     ocontext = g_option_context_new ("- Laser Brain Stimulator");
     g_option_context_add_main_entries (ocontext, option_entries, NULL);
-    if (!g_option_context_parse (ocontext, &argc, &argv, &error))
-    {
+    if (!g_option_context_parse (ocontext, &argc, &argv, &error)) {
         g_printerr ("option parsing failed: %s\n", error->message);
         return 1;
     }
@@ -369,6 +370,10 @@ main (int argc, char *argv[])
         memset (&dummy, 0, MAX_SAFE_STACK);
     }
 
+    /* initialize DAQ board */
+    if (!gld_board_initialize ())
+        return 1;
+
     /* set a random seed based on the time we launched */
     init_random_seed ();
 
@@ -384,7 +389,7 @@ main (int argc, char *argv[])
                                    opt_minimum_interval_ms,
                                    opt_maximum_interval_ms,
                                    opt_train_frequency_hz);
-        return 0;
+        goto finish;
     }
 
     /* Do the theta stimulation */
@@ -396,7 +401,7 @@ main (int argc, char *argv[])
                                    opt_dat_file_name,
                                    opt_channels_in_dat_file,
                                    opt_offline_channel);
-        return 0;
+        goto finish;
     }
 
 
@@ -414,10 +419,12 @@ main (int argc, char *argv[])
                                  opt_channels_in_dat_file,
                                  opt_offline_channel,
                                  opt_swr_offline_reference);
-        return 0;
+        goto finish;
     }
 
-    /* unreachable */
+finish:
+    /* clear Galdur board state */
+    gld_board_shutdown ();
 
     return 0;
 }

@@ -24,12 +24,11 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include <galdur.h>
 #include "defaults.h"
 #include "fftw-functions.h"
 #include "data-file-si.h"
 #include "utils.h"
-#include "gld-adc.h"
-#include "gld-utils.h"
 #include "stimpulse.h"
 
 /**
@@ -137,7 +136,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
                            const gchar *offline_data_file, int channels_in_dat_file, int offline_channel)
 {
     TimeKeeper tk;
-    Max1133Daq *daq;
+    GldAdc *daq;
 
     /* variables to work offline from a dat file */
     int new_samples_per_read_operation = 60; /* 3 ms of data */
@@ -167,7 +166,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
     /* structure with variables to do the filtering of signal */
     struct fftw_interface_theta fftw_inter;
 
-    daq = max1133daq_new (2, 10000);
+    daq = gld_adc_new (2, 10000);
 
     if (fftw_interface_theta_init (&fftw_inter) == -1) {
         fprintf (stderr, "Could not initialize fftw_interface_theta\n");
@@ -198,7 +197,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
     fprintf (stderr, "starting acquisition\n");
 #endif
 
-    max1133daq_set_acq_frequency (daq, 3000); /* 3 kHz */
+    gld_adc_set_acq_frequency (daq, 3000); /* 3 kHz */
 
 #ifdef DEBUG_THETA
     // to check the intervals before getting new data.
@@ -225,7 +224,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
         size_t data_slice_pos = 0;
 
         /* acquire data */
-        if (!max1133daq_acquire_data (daq, fftw_inter.real_data_to_fft_size)) {
+        if (!gld_adc_acquire_data (daq, fftw_inter.real_data_to_fft_size)) {
             fprintf (stderr,
                      "Unable to acquire samples, swr stimulation not possible\n");
             return FALSE;
@@ -237,7 +236,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
                 int16_t data;
 
                 /* get data from MAX1133 ADC chip */
-                if (max1133daq_get_data (daq, 0, &data)) {
+                if (gld_adc_get_data (daq, 0, &data)) {
                     fftw_inter.signal_data[data_slice_pos] = data;
                     data_slice_pos++;
                 } else {
@@ -386,7 +385,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
     }
 
     /* this will stop the acquisition thread */
-    if (!max1133daq_reset (daq)) {
+    if (!gld_adc_reset (daq)) {
         fprintf (stderr, "Could not stop data acquisition\n");
         return FALSE;
     }
@@ -395,7 +394,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
     fftw_interface_theta_free (&fftw_inter);
 
     /* free daq interface */
-    max1133daq_free (daq);
+    gld_adc_free (daq);
 
     /* free the memory for dat file data, if running with offline data */
     if (offline_data_file != NULL) {
@@ -420,7 +419,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
                          const gchar *offline_data_file, int channels_in_dat_file, int offline_channel, int offline_reference_channel)
 {
     TimeKeeper tk;
-    Max1133Daq *daq;
+    GldAdc *daq;
 
     /* variables to work offline from a dat file */
     data_file_si data_file;
@@ -446,7 +445,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
         gld_set_timespec_from_ms (INTERVAL_DURATION_BETWEEN_SWR_PROCESSING_MS);
 
     /* create DAQ interface */
-    daq = max1133daq_new (2, 10000);
+    daq = gld_adc_new (2, 10000);
 
     /* initialize fftw interface */
     if (fftw_interface_swr_init (&fftw_inter_swr) == -1) {
@@ -456,7 +455,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
 
     if (offline_data_file == NULL) {
         /* we are not using a dat file, set up data acquisition */
-        max1133daq_set_acq_frequency (daq, 3000); /* 3 kHz */
+        gld_adc_set_acq_frequency (daq, 3000); /* 3 kHz */
     } else {
         /* the program is running from a data file. allocate memory for 2 arrays. */
 
@@ -516,7 +515,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
             /* get data from our ADC chip */
 
             /* acquire data */
-            if (!max1133daq_acquire_data (daq, fftw_inter_swr.real_data_to_fft_size * 2)) {
+            if (!gld_adc_acquire_data (daq, fftw_inter_swr.real_data_to_fft_size * 2)) {
                 fprintf (stderr,
                          "Unable to acquire samples, swr stimulation not possible\n");
                 return FALSE;
@@ -529,7 +528,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
 
                 /* get data from MAX1133 ADC chip, data channel */
                 if (data_slice_pos < fftw_inter_swr.real_data_to_fft_size) {
-                    if (max1133daq_get_data (daq, 0, &data)) {
+                    if (gld_adc_get_data (daq, 0, &data)) {
                         fftw_inter_swr.signal_data[data_slice_pos] = data;
                         data_slice_pos++;
                         data_acquired = TRUE;
@@ -540,7 +539,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
 
                 /* get data from MAX1133 ADC chip, reference channel */
                 if (data_ref_slice_pos < fftw_inter_swr.real_data_to_fft_size) {
-                    if (max1133daq_get_data (daq, 1, &data_ref)) {
+                    if (gld_adc_get_data (daq, 1, &data_ref)) {
                         fftw_inter_swr.ref_signal_data[data_ref_slice_pos] = data_ref;
                         data_ref_slice_pos++;
                         data_acquired = TRUE;
@@ -718,14 +717,14 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
 
     fftw_interface_swr_free (&fftw_inter_swr);
     if (offline_data_file == NULL) {
-        if (!max1133daq_reset (daq)) {
+        if (!gld_adc_reset (daq)) {
             fprintf (stderr, "Could not stop data acquisition\n");
             return FALSE;
         }
     }
 
     /* free daq interface */
-    max1133daq_free (daq);
+    gld_adc_free (daq);
 
     /* free the memory for dat file data, if running with offline data */
     if (offline_data_file != NULL) {
