@@ -17,13 +17,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __GALDUR_H
-#define __GALDUR_H
+#ifndef __GLD_GPIO_H
+#define __GLD_GPIO_H
 
-#include <gld-init.h>
-#include <gld-utils.h>
+#include <stdint.h>
 
-#include <gld-gpio.h>
-#include <gld-adc.h>
+#define GLD_GPIO_HIGH 1
+#define GLD_GPIO_LOW  0
 
-#endif /* __GALDUR_H */
+void gld_status_led_set (uint8_t state);
+
+#endif /* __GLD_GPIO_H */

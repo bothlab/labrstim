@@ -83,6 +83,11 @@ gld_board_initialize (void)
       return FALSE;
     }
 
+    /* initialize default GPIO pins */
+
+    /* status LED on pin 17 */
+    bcm2835_gpio_fsel (RPI_GPIO_P1_11, BCM2835_GPIO_FSEL_OUTP);
+
     return TRUE;
 }
 

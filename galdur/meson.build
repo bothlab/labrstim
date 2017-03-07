@@ -13,6 +13,8 @@ galdur_src = [
     'gld-init.c',
     'gld-utils.h',
     'gld-utils.c',
+    'gld-gpio.h',
+    'gld-gpio.c',
     'gld-adc.h',
     'gld-adc.c'
 ]
