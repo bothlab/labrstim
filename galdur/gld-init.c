@@ -78,15 +78,20 @@ gld_board_initialize (void)
     }
 
     /* set up BCM2835 */
-    bcm2835_spi0_setBitOrder(BCM2835_SPI_BIT_ORDER_MSBFIRST);
-    bcm2835_spi0_setDataMode(BCM2835_SPI_MODE0);
-    bcm2835_spi0_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_128); /* the right clock divider for RasPi 3 B+ */
-    bcm2835_spi0_chipSelect(BCM2835_SPI_CS0); /* chip-select 0 */
-    bcm2835_spi0_setChipSelectPolarity(BCM2835_SPI_CS0, LOW);
+    bcm2835_spi_setBitOrder(BCM2835_SPI_BIT_ORDER_MSBFIRST);
+    bcm2835_spi_setDataMode(BCM2835_SPI_MODE0);
+    bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_128); /* the right clock divider for RasPi 3 B+ */
+    bcm2835_spi_chipSelect(BCM2835_SPI_CS0); /* chip-select 0 */
+    bcm2835_spi_setChipSelectPolarity(BCM2835_SPI_CS0, LOW);
 
-    if (!bcm2835_spi0_begin ()) {
-      g_error ("bcm2835_spi0_begin failed. Is the software running on the right CPU?");
+    if (!bcm2835_spi_begin ()) {
+      g_error ("bcm2835_spi_begin failed. Is the software running on the right CPU?");
       return FALSE;
+    }
+
+    if (!bcm2835_aux_spi_begin ()) {
+        g_error ("bcm2835_aux_spi_begin failed.");
+        return FALSE;
     }
 
     /* initialize default GPIO pins */
@@ -105,6 +110,8 @@ gld_board_initialize (void)
 void
 gld_board_shutdown (void)
 {
-    bcm2835_spi0_end ();
+    /* reset everything */
+    bcm2835_spi_end ();
+    bcm2835_aux_spi_end ();
     bcm2835_close ();
 }

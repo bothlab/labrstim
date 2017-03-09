@@ -16,7 +16,9 @@ galdur_src = [
     'gld-gpio.h',
     'gld-gpio.c',
     'gld-adc.h',
-    'gld-adc.c'
+    'gld-adc.c',
+    'gld-dac.h',
+    'gld-dac.c'
 ]
 
 #
@@ -60,6 +62,10 @@ executable('galdur-adc',
 )
 executable('galdur-blink',
            ['tools/galdur-blink.c'],
+           dependencies: [galdur_dep]
+)
+executable('galdur-dac',
+           ['tools/galdur-dac.c'],
            dependencies: [galdur_dep]
 )
 

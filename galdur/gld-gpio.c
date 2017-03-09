@@ -21,6 +21,9 @@
 
 #include "bcm2835.h"
 
+/**
+ * gld_status_led_set:
+ */
 void
 gld_status_led_set (uint8_t state)
 {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2017 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU General Public License Version 3
  *
@@ -17,14 +17,38 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __GALDUR_H
-#define __GALDUR_H
+#include "gld-dac.h"
 
-#include <gld-init.h>
-#include <gld-utils.h>
+#include "bcm2835.h"
 
-#include <gld-gpio.h>
-#include <gld-adc.h>
-#include <gld-dac.h>
 
-#endif /* __GALDUR_H */
+static void print_binary (unsigned int val, size_t size)
+{
+    unsigned int n = val;
+    size_t pos = size - 1;
+
+    while (pos != 0) {
+        if (n & 1)
+            g_print ("1");
+        else
+            g_print ("0");
+
+        n >>= 1;
+        pos--;
+    }
+    g_print ("\n");
+}
+
+/**
+ * gld_dac_set_value:
+ */
+void
+gld_dac_set_value (uint16_t value)
+{
+    uint8_t tx_ctl;
+
+    tx_ctl = 0b00110001;
+
+    bcm2835_aux_spi_writenb ((char*) &tx_ctl, sizeof(tx_ctl));
+    bcm2835_aux_spi_writenb ((char*) &value, sizeof(value));
+}

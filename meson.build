@@ -5,6 +5,8 @@ labrstim_copyright = 'Kevin Allen <allen@uni-heidelberg.de> | Matthias Klumpp <m
 
 compiler = meson.get_compiler('c')
 
+message('This program will only run on Raspberry Pi 3 hardware with the Galdur board.')
+
 #
 # Sources
 #
@@ -85,5 +87,3 @@ executable('labrstim',
                           math_lib,
                           galdur_dep]
 )
-
-message('This program will only run on Raspberry Pi 3 hardware with the Galdur board. Do not run it on different hardware!')
