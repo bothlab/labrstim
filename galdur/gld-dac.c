@@ -22,22 +22,13 @@
 #include "bcm2835.h"
 
 
-static void print_binary (unsigned int val, size_t size)
-{
-    unsigned int n = val;
-    size_t pos = size - 1;
+enum {
+    DAC0 = 0x01,
+    DAC1 = 0x02,
+    DAC2 = 0x04,
+    DAC3 = 0x08
+} DACNumber;
 
-    while (pos != 0) {
-        if (n & 1)
-            g_print ("1");
-        else
-            g_print ("0");
-
-        n >>= 1;
-        pos--;
-    }
-    g_print ("\n");
-}
 
 /**
  * gld_dac_set_value:
@@ -45,10 +36,14 @@ static void print_binary (unsigned int val, size_t size)
 void
 gld_dac_set_value (uint16_t value)
 {
-    uint8_t tx_ctl;
+    struct __attribute__ ((packed)) {
+        uint8_t control;
+        int16_t data;
+    } tx_cmd;
 
-    tx_ctl = 0b00110001;
 
-    bcm2835_aux_spi_writenb ((char*) &tx_ctl, sizeof(tx_ctl));
-    bcm2835_aux_spi_writenb ((char*) &value, sizeof(value));
+    tx_cmd.control = 0b00110000 | DAC0;
+    tx_cmd.data    = value;
+
+    bcm2835_aux_spi_writenb ((char*) &tx_cmd, sizeof(tx_cmd));
 }

@@ -1517,8 +1517,9 @@ int bcm2835_close(void)
 #define BCM2835_AUX_SPI_CNTL0    0x00
 #define BCM2835_AUX_SPI_CNTL1    0x04
 #define BCM2835_AUX_SPI_STAT    0x08
-#define BCM2835_AUX_SPI_PEEK    0x0C
 #define BCM2835_AUX_SPI_IO    0x20
+
+#define BCM2835_AUX_SPI_PEEK    0x0C
 #define BCM2835_AUX_SPI_TXHOLD    0x30
 
 /* Bitfields in CNTL0 */
@@ -1559,29 +1560,6 @@ int bcm2835_close(void)
 static uint32_t aux_spi1_speed;
 
 /**
- *
- * @param speed_hz
- * @return
- */
-static const uint16_t bcm2835_aux_spi_CalcClockDivider(uint32_t speed_hz) {
-	uint16_t divider;
-
-	if (speed_hz < (uint32_t) BCM2835_AUX_SPI_CLOCK_MIN) {
-		speed_hz = (uint32_t) BCM2835_AUX_SPI_CLOCK_MIN;
-	} else if (speed_hz > (uint32_t) BCM2835_AUX_SPI_CLOCK_MAX) {
-		speed_hz = (uint32_t) BCM2835_AUX_SPI_CLOCK_MAX;
-	}
-
-	divider = (uint16_t) DIV_ROUND_UP(BCM2835_CORE_CLK_HZ, 2 * speed_hz) - 1;
-
-	if (divider > (uint16_t) BCM2835_AUX_SPI_CNTL0_SPEED_MAX) {
-		return (uint16_t) BCM2835_AUX_SPI_CNTL0_SPEED_MAX;
-	}
-
-	return divider;
-}
-
-/**
  * bcm2835_aux_spi_begin
  */
 int bcm2835_aux_spi_begin (void)
@@ -1595,7 +1573,7 @@ int bcm2835_aux_spi_begin (void)
     bcm2835_gpio_fsel (21, BCM2835_GPIO_FSEL_ALT4); /* SPI1_SCLK */
 
 
-    bcm2835_aux_spi_setClockDivider(bcm2835_aux_spi_CalcClockDivider(1000000));	// Default 1MHz SPI
+    bcm2835_aux_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_128);
 
 
     bcm2835_peri_write (bcm2835_spi1 + BCM2835_AUX_SPI_CNTL1/4, 0); /* All 0s */
