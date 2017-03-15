@@ -49,7 +49,8 @@ galdur_lib = static_library('galdur',
            [galdur_src],
            dependencies: [thread_dep,
                           glib_dep,
-                          math_lib]
+                          math_lib],
+           c_args: ['-Wall',  '-O3', '-nostartfiles', '-ffreestanding']
 )
 galdur_dep = declare_dependency(link_with: galdur_lib,
                                 include_directories: include_directories('.'),

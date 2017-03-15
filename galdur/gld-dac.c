@@ -43,7 +43,7 @@ gld_dac_set_value (uint16_t value)
 
 
     tx_cmd.control = 0b00110000 | DAC0;
-    tx_cmd.data    = value;
+    tx_cmd.data    = (value << 8) | (value >> 8); // reverse byteorder
 
     bcm2835_aux_spi_writenb ((char*) &tx_cmd, sizeof(tx_cmd));
 }

@@ -1668,16 +1668,11 @@ extern "C" {
     */
     extern void bcm2835_pwm_set_data(uint8_t channel, uint32_t data);
 
-
     extern int bcm2835_aux_spi_begin (void);
     extern void bcm2835_aux_spi_end (void);
     extern void bcm2835_aux_spi_setClockDivider (const uint16_t);
 
     extern void bcm2835_aux_spi_writenb (const char *, const uint32_t);
-
-    extern void bcm2835_aux_spi_transfernb (const char *, char *, const uint32_t);
-    extern void bcm2835_aux_spi_transfern (char *, const uint32_t);
-
 
     /*! @}  */
 #ifdef __cplusplus

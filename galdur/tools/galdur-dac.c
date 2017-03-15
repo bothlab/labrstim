@@ -52,14 +52,14 @@ run_dac ()
             count_down = TRUE;
         if (value <= min_value)
             count_down = FALSE;
-        usleep (opt_delay * 1000);
+        usleep (opt_delay);
     }
 }
 
 static GOptionEntry option_entries[] =
 {
     { "delay", 'd', 0, G_OPTION_ARG_INT, &opt_delay,
-        "Delay between the steps in msec", "Wait delay" },
+        "Delay between the steps in µsec", "Wait delay" },
 
     { NULL }
 };
