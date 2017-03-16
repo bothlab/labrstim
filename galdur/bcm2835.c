@@ -1463,9 +1463,9 @@ int bcm2835_close(void)
 /* BEGIN AUX SPI */
 
 #define MIN(a,b)            (((a) < (b)) ? (a) : (b))
-#define DIV_ROUND_UP(n,d)    (((n) + (d) - 1) / (d))
+#define DIV_ROUND_UP(n,d)   (((n) + (d) - 1) / (d))
 
-#define BCM2835_AUX_ENABLE    0x04
+#define BCM2835_AUX_ENABLE      0x04
 #define BCM2835_AUX_BIT_UART    0x00000001
 #define BCM2835_AUX_BIT_SPI1    0x00000002
 #define BCM2835_AUX_BIT_SPI2    0x00000004
@@ -1474,48 +1474,48 @@ int bcm2835_close(void)
 #define BCM2835_AUX_SPI_CLOCK_MAX    125000000        ///< 125Mhz
 
 /* SPI register offsets */
-#define BCM2835_AUX_SPI_CNTL0    0x00
-#define BCM2835_AUX_SPI_CNTL1    0x04
+#define BCM2835_AUX_SPI_CNTL0   0x00
+#define BCM2835_AUX_SPI_CNTL1   0x04
 #define BCM2835_AUX_SPI_STAT    0x08
-#define BCM2835_AUX_SPI_IO    0x20
+#define BCM2835_AUX_SPI_IO      0x20
 
 #define BCM2835_AUX_SPI_PEEK    0x0C
-#define BCM2835_AUX_SPI_TXHOLD    0x30
+#define BCM2835_AUX_SPI_TXHOLD  0x30
 
 /* Bitfields in CNTL0 */
-#define BCM2835_AUX_SPI_CNTL0_SPEED    0xFFF00000
-#define BCM2835_AUX_SPI_CNTL0_SPEED_MAX    0xFFF
-#define BCM2835_AUX_SPI_CLOCK_MIN    30500            ///< 30,5kHz
-#define BCM2835_AUX_SPI_CNTL0_SPEED_SHIFT    20
-#define BCM2835_AUX_SPI_CNTL0_CS    0x000E0000
-#define BCM2835_AUX_SPI_CNTL0_POSTINPUT    0x00010000
-#define BCM2835_AUX_SPI_CNTL0_VAR_CS    0x00008000
-#define BCM2835_AUX_SPI_CNTL0_VAR_WIDTH    0x00004000
-#define BCM2835_AUX_SPI_CNTL0_DOUTHOLD    0x00003000
-#define BCM2835_AUX_SPI_CNTL0_ENABLE    0x00000800
-#define BCM2835_AUX_SPI_CNTL0_IN_RISING    0x00000400
-#define BCM2835_AUX_SPI_CNTL0_CLEARFIFO    0x00000200
+#define BCM2835_AUX_SPI_CNTL0_SPEED         0xFFF00000
+#define BCM2835_AUX_SPI_CNTL0_SPEED_MAX     0xFFF
+#define BCM2835_AUX_SPI_CLOCK_MIN           30500            ///< 30,5kHz
+#define BCM2835_AUX_SPI_CNTL0_SPEED_SHIFT   20
+#define BCM2835_AUX_SPI_CNTL0_CS            0x000E0000
+#define BCM2835_AUX_SPI_CNTL0_POSTINPUT     0x00010000
+#define BCM2835_AUX_SPI_CNTL0_VAR_CS        0x00008000
+#define BCM2835_AUX_SPI_CNTL0_VAR_WIDTH     0x00004000
+#define BCM2835_AUX_SPI_CNTL0_DOUTHOLD      0x00003000
+#define BCM2835_AUX_SPI_CNTL0_ENABLE        0x00000800
+#define BCM2835_AUX_SPI_CNTL0_IN_RISING     0x00000400
+#define BCM2835_AUX_SPI_CNTL0_CLEARFIFO     0x00000200
 #define BCM2835_AUX_SPI_CNTL0_OUT_RISING    0x00000100
-#define BCM2835_AUX_SPI_CNTL0_CPOL    0x00000080
-#define BCM2835_AUX_SPI_CNTL0_MSBF_OUT    0x00000040
-#define BCM2835_AUX_SPI_CNTL0_SHIFTLEN    0x0000003F
+#define BCM2835_AUX_SPI_CNTL0_CPOL          0x00000080
+#define BCM2835_AUX_SPI_CNTL0_MSBF_OUT      0x00000040
+#define BCM2835_AUX_SPI_CNTL0_SHIFTLEN      0x0000003F
 
 /* Bitfields in CNTL1 */
-#define BCM2835_AUX_SPI_CNTL1_CSHIGH    0x00000700
-#define BCM2835_AUX_SPI_CNTL1_TXEMPTY    0x00000080
-#define BCM2835_AUX_SPI_CNTL1_IDLE    0x00000040
-#define BCM2835_AUX_SPI_CNTL1_MSBF_IN    0x00000002
-#define BCM2835_AUX_SPI_CNTL1_KEEP_IN    0x00000001
+#define BCM2835_AUX_SPI_CNTL1_CSHIGH        0x00000700
+#define BCM2835_AUX_SPI_CNTL1_TXEMPTY       0x00000080
+#define BCM2835_AUX_SPI_CNTL1_IDLE          0x00000040
+#define BCM2835_AUX_SPI_CNTL1_MSBF_IN       0x00000002
+#define BCM2835_AUX_SPI_CNTL1_KEEP_IN       0x00000001
 
 /* Bitfields in STAT */
-#define BCM2835_AUX_SPI_STAT_TX_LVL    0xFF000000
-#define BCM2835_AUX_SPI_STAT_RX_LVL    0x00FF0000
+#define BCM2835_AUX_SPI_STAT_TX_LVL     0xFF000000
+#define BCM2835_AUX_SPI_STAT_RX_LVL     0x00FF0000
 #define BCM2835_AUX_SPI_STAT_TX_FULL    0x00000400
-#define BCM2835_AUX_SPI_STAT_TX_EMPTY    0x00000200
+#define BCM2835_AUX_SPI_STAT_TX_EMPTY   0x00000200
 #define BCM2835_AUX_SPI_STAT_RX_FULL    0x00000100
-#define BCM2835_AUX_SPI_STAT_RX_EMPTY    0x00000080
-#define BCM2835_AUX_SPI_STAT_BUSY    0x00000040
-#define BCM2835_AUX_SPI_STAT_BITCOUNT    0x0000003F
+#define BCM2835_AUX_SPI_STAT_RX_EMPTY   0x00000080
+#define BCM2835_AUX_SPI_STAT_BUSY       0x00000040
+#define BCM2835_AUX_SPI_STAT_BITCOUNT   0x0000003F
 
 /* Chipselect */
 #define BCM2835_AUX_SPI_CNTL0_CS0_N     0x000C0000 // CS 0 low
@@ -1523,30 +1523,6 @@ int bcm2835_close(void)
 #define BCM2835_AUX_SPI_CNTL0_CS2_N     0x00060000 // CS 2 low
 
 static uint32_t aux_spi1_speed;
-
-/**
- *
- * @param speed_hz
- * @return
- */
-static const uint16_t bcm2835_aux_spi_CalcClockDivider(uint32_t speed_hz)
-{
-    uint16_t divider;
-
-    if (speed_hz < (uint32_t) BCM2835_AUX_SPI_CLOCK_MIN) {
-        speed_hz = (uint32_t) BCM2835_AUX_SPI_CLOCK_MIN;
-    } else if (speed_hz > (uint32_t) BCM2835_AUX_SPI_CLOCK_MAX) {
-        speed_hz = (uint32_t) BCM2835_AUX_SPI_CLOCK_MAX;
-    }
-
-    divider = (uint16_t) DIV_ROUND_UP(BCM2835_CORE_CLK_HZ, 2 * speed_hz) - 1;
-
-    if (divider > (uint16_t) BCM2835_AUX_SPI_CNTL0_SPEED_MAX) {
-        return (uint16_t) BCM2835_AUX_SPI_CNTL0_SPEED_MAX;
-    }
-
-    return divider;
-}
 
 /**
  * bcm2835_aux_spi_begin
@@ -1586,9 +1562,33 @@ void bcm2835_aux_spi_end (void)
 
 /**
  *
+ * @param speed_hz
+ * @return
+ */
+const uint16_t bcm2835_aux_spi_CalcClockDivider (uint32_t speed_hz)
+{
+    uint16_t divider;
+
+    if (speed_hz < (uint32_t) BCM2835_AUX_SPI_CLOCK_MIN) {
+        speed_hz = (uint32_t) BCM2835_AUX_SPI_CLOCK_MIN;
+    } else if (speed_hz > (uint32_t) BCM2835_AUX_SPI_CLOCK_MAX) {
+        speed_hz = (uint32_t) BCM2835_AUX_SPI_CLOCK_MAX;
+    }
+
+    divider = (uint16_t) DIV_ROUND_UP(BCM2835_CORE_CLK_HZ, 2 * speed_hz) - 1;
+
+    if (divider > (uint16_t) BCM2835_AUX_SPI_CNTL0_SPEED_MAX) {
+        return (uint16_t) BCM2835_AUX_SPI_CNTL0_SPEED_MAX;
+    }
+
+    return divider;
+}
+
+/**
+ *
  * @param divider
  */
-void bcm2835_aux_spi_setClockDivider(const uint16_t divider)
+void bcm2835_aux_spi_setClockDivider (const uint16_t divider)
 {
     aux_spi1_speed = (uint32_t) divider;
 }
@@ -1598,7 +1598,7 @@ void bcm2835_aux_spi_setClockDivider(const uint16_t divider)
  * @param tbuf
  * @param len
  */
-void bcm2835_aux_spi_writenb(const char *tbuf, const uint32_t len)
+void bcm2835_aux_spi_writenb (const char *tbuf, const uint32_t len)
 {
     char *tx = (char *) tbuf;
     uint32_t tx_len = len;
