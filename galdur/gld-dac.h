@@ -23,6 +23,6 @@
 #include <glib.h>
 #include <stdint.h>
 
-void gld_dac_set_value (uint16_t value);
+void gld_dac_set_value (uint8_t channel, uint16_t value);
 
 #endif /* __GLD_DAC_H */
