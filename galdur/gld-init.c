@@ -115,3 +115,21 @@ gld_board_shutdown (void)
     bcm2835_aux_spi_end ();
     bcm2835_close ();
 }
+
+/**
+ * gld_board_set_spi_clock_divider:
+ */
+void
+gld_board_set_spi_clock_divider (const uint16_t divider)
+{
+    bcm2835_spi_setClockDivider (divider);
+}
+
+/**
+ * gld_board_set_aux_spi_clock_divider:
+ */
+void
+gld_board_set_aux_spi_clock_divider (const uint16_t divider)
+{
+    bcm2835_aux_spi_setClockDivider (divider);
+}

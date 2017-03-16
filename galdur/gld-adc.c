@@ -189,100 +189,6 @@ data_buffer_pull_data (DataBuffer *dbuf, int16_t *data)
 }
 
 /**
- * daq_thread_main:
- */
-static void*
-daq_thread_main (void *daq_ptr)
-{
-    GldAdc *daq = (GldAdc*) daq_ptr;
-    struct timespec start, stop;
-    struct timespec daq_time;
-
-    struct timespec delay_time;
-    struct timespec max_delay_time;
-
-    size_t sample_count = 0;
-
-    max_delay_time = gld_set_timespec_from_ms (1000 / daq->acq_frequency);
-    while (daq->running) {
-        int16_t rxval = 0;
-        guint i;
-
-        if (clock_gettime (CLOCK_REALTIME, &start) == -1 ) {
-            g_critical ("Unable to get realtime DAQ start time.");
-            continue;
-        }
-
-        /* retrieve data from all channels */
-        for (i = 0; i < daq->channel_count; i++) {
-            uint8_t txbuf = MAX1133_START;
-            int chan;
-
-            if (i < 8) {
-                if (i == 0) {
-                    if (daq->channel_count >= 8)
-                        chan = 7;
-                    else
-                        chan = daq->channel_count - 1;
-                } else {
-                    chan = i - 1;
-                }
-                txbuf |= max1133_mux_channel_map[i];
-
-                /* select MAX 1133 1 */
-                bcm2835_spi_chipSelect(BCM2835_SPI_CS0);
-            } else {
-                if ((i - 8) == 0) {
-                    chan = daq->channel_count - 1;
-                } else {
-                    chan = i - 1;
-                }
-                txbuf |= max1133_mux_channel_map[i - 8];
-
-                /* select MAX 1133 2 */
-                bcm2835_spi_chipSelect(BCM2835_SPI_CS1);
-            }
-
-#ifndef SIMULATE_DATA
-            /* synchronous SPI query, two bytes received and stored in int16_t */
-            bcm2835_spi_transfernb ((char*) &txbuf, (char*) &rxval, sizeof(int16_t));
-#else
-            if ((chan % 2) == 0)
-                rxval = rand () % (600 * (chan + 1));
-            else
-                rxval = (rand () % (600 * (chan + 1))) * -1;
-#endif
-            data_buffer_push_data (daq->buffer[chan], rxval);
-        }
-
-        if (clock_gettime (CLOCK_REALTIME, &stop) == -1 ) {
-            g_critical ("Unable to get realtime DAQ stop time.");
-            daq->running = FALSE;
-            continue;
-        }
-
-        daq_time.tv_sec = stop.tv_sec - start.tv_sec;
-        daq_time.tv_nsec = stop.tv_nsec - start.tv_nsec;
-
-        sample_count++;
-        daq->running = daq->sample_max_count > sample_count;
-
-        if ((daq_time.tv_sec > max_delay_time.tv_sec) && (daq_time.tv_nsec > max_delay_time.tv_nsec)) {
-            /* we took too long, get new sample immediately */
-            continue;
-        }
-
-        delay_time.tv_sec = max_delay_time.tv_sec - daq_time.tv_sec;
-        delay_time.tv_nsec = max_delay_time.tv_nsec - daq_time.tv_nsec;
-
-        /* wait the remaining time */
-        nanosleep (&delay_time, NULL);
-    }
-
-    return NULL;
-}
-
-/**
  * gld_adc_new:
  */
 GldAdc*
@@ -341,10 +247,114 @@ gld_adc_set_acq_frequency (GldAdc *daq, guint hz)
 }
 
 /**
+ * gld_adc_acquire_oneshot:
+ */
+static inline void
+gld_adc_acquire_oneshot (GldAdc *daq)
+{
+    int16_t rxval = 0;
+    guint i;
+
+    /* retrieve data from all channels */
+    for (i = 0; i < daq->channel_count; i++) {
+        uint8_t txbuf = MAX1133_START;
+        int chan;
+
+        if (i < 8) {
+            if (i == 0) {
+                if (daq->channel_count >= 8)
+                    chan = 7;
+                else
+                    chan = daq->channel_count - 1;
+            } else {
+                chan = i - 1;
+            }
+            txbuf |= max1133_mux_channel_map[i];
+
+            /* select MAX 1133 1 */
+            bcm2835_spi_chipSelect(BCM2835_SPI_CS0);
+        } else {
+            if ((i - 8) == 0) {
+                chan = daq->channel_count - 1;
+            } else {
+                chan = i - 1;
+            }
+            txbuf |= max1133_mux_channel_map[i - 8];
+
+            /* select MAX 1133 2 */
+            bcm2835_spi_chipSelect(BCM2835_SPI_CS1);
+        }
+
+#ifndef SIMULATE_DATA
+        /* synchronous SPI query, two bytes received and stored in int16_t */
+        bcm2835_spi_transfernb ((char*) &txbuf, (char*) &rxval, sizeof(int16_t));
+#else
+        if ((chan % 2) == 0)
+            rxval = rand () % (600 * (chan + 1));
+        else
+            rxval = (rand () % (600 * (chan + 1))) * -1;
+#endif
+        data_buffer_push_data (daq->buffer[chan], rxval);
+    }
+}
+
+/**
+ * daq_thread_main:
+ */
+static void*
+daq_thread_main (void *daq_ptr)
+{
+    GldAdc *daq = (GldAdc*) daq_ptr;
+    struct timespec start, stop;
+    struct timespec daq_time;
+
+    struct timespec delay_time;
+    struct timespec max_delay_time;
+
+    size_t sample_count = 0;
+
+    max_delay_time = gld_set_timespec_from_ms (1000 / daq->acq_frequency);
+    while (daq->running) {
+        if (clock_gettime (CLOCK_REALTIME, &start) == -1 ) {
+            g_critical ("Unable to get realtime DAQ start time.");
+            continue;
+        }
+
+        /* acquire a single set of data */
+        gld_adc_acquire_oneshot (daq);
+
+        if (clock_gettime (CLOCK_REALTIME, &stop) == -1 ) {
+            g_critical ("Unable to get realtime DAQ stop time.");
+            daq->running = FALSE;
+            continue;
+        }
+
+        daq_time.tv_sec = stop.tv_sec - start.tv_sec;
+        daq_time.tv_nsec = stop.tv_nsec - start.tv_nsec;
+
+        sample_count++;
+        daq->running = daq->sample_max_count > sample_count;
+
+        if ((daq_time.tv_sec > max_delay_time.tv_sec) && (daq_time.tv_nsec > max_delay_time.tv_nsec)) {
+            /* we took too long, get new sample immediately */
+            continue;
+        }
+
+        delay_time.tv_sec = max_delay_time.tv_sec - daq_time.tv_sec;
+        delay_time.tv_nsec = max_delay_time.tv_nsec - daq_time.tv_nsec;
+
+        /* wait the remaining time */
+        nanosleep (&delay_time, NULL);
+    }
+
+    return NULL;
+}
+
+/**
  * gld_adc_acquire_data:
  * @sample_count: Number of samples to acquire
  *
- * acquire a fixed amount of samples. Data acquisition happens
+ * Acquire a fixed amount of samples. Data acquisition happens
  * in a background thread, the function will return immediately.
  */
 gboolean
@@ -366,6 +376,18 @@ gld_adc_acquire_data (GldAdc *daq, size_t sample_count)
     }
 
     return TRUE;
+}
+
+/**
+ * gld_adc_acquire_single_dataset:
+ *
+ * Immediately acquire a single dataset.
+ */
+void
+gld_adc_acquire_single_dataset (GldAdc *daq)
+{
+    g_assert (!daq->running);
+    gld_adc_acquire_oneshot (daq);
 }
 
 /**

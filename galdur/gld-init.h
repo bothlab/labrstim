@@ -21,8 +21,12 @@
 #define __GLD_INIT_H
 
 #include <glib.h>
+#include <stdint.h>
 
 gboolean    gld_board_initialize (void);
 void        gld_board_shutdown (void);
+
+void        gld_board_set_spi_clock_divider (const uint16_t divider);
+void        gld_board_set_aux_spi_clock_divider (const uint16_t divider);
 
 #endif /* __GLD_INIT_H */

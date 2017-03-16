@@ -34,13 +34,14 @@ typedef struct
     size_t sample_max_count;
 } GldAdc;
 
-GldAdc      *gld_adc_new (guint channel_count,
+GldAdc          *gld_adc_new (guint channel_count,
                                  size_t buffer_capacity);
 void            gld_adc_free (GldAdc *daq);
 
 void            gld_adc_set_acq_frequency (GldAdc *daq,
                                               guint hz);
 
+void            gld_adc_acquire_single_dataset (GldAdc *daq);
 gboolean        gld_adc_acquire_data (GldAdc *daq,
                                          size_t sample_count);
 gboolean        gld_adc_reset (GldAdc *daq);

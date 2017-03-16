@@ -69,6 +69,10 @@ executable('galdur-dac',
            ['tools/galdur-dac.c'],
            dependencies: [galdur_dep]
 )
+executable('galdur-io',
+           ['tools/galdur-io.c'],
+           dependencies: [galdur_dep]
+)
 
 #
 # Tests
