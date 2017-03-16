@@ -1671,7 +1671,7 @@ extern "C" {
     extern int bcm2835_aux_spi_begin (void);
     extern void bcm2835_aux_spi_end (void);
     extern const uint16_t bcm2835_aux_spi_CalcClockDivider (uint32_t speed_hz);
-    extern void bcm2835_aux_spi_setClockDivider (const uint16_t);
+    extern void bcm2835_aux_spi_setClockDivider (const uint16_t divider);
 
     extern void bcm2835_aux_spi_writenb (const char *, const uint32_t);
 

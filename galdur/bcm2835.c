@@ -1359,7 +1359,8 @@ int bcm2835_init(void)
         unsigned char buf[4];
     fseek(fp, BMC2835_RPI2_DT_PERI_BASE_ADDRESS_OFFSET, SEEK_SET);
     if (fread(buf, 1, sizeof(buf), fp) == sizeof(buf))
-      bcm2835_peripherals_base = (uint32_t *)(buf[0] << 24 | buf[1] << 16 | buf[2] << 8 | buf[3] << 0);
+      bcm2835_peripherals_base = (uint32_t *) (intptr_t) (buf[0] << 24 | buf[1] << 16 | buf[2] << 8 | buf[3] << 0);
+
     fseek(fp, BMC2835_RPI2_DT_PERI_SIZE_OFFSET, SEEK_SET);
     if (fread(buf, 1, sizeof(buf), fp) == sizeof(buf))
       bcm2835_peripherals_size = (buf[0] << 24 | buf[1] << 16 | buf[2] << 8 | buf[3] << 0);
@@ -1385,7 +1386,7 @@ int bcm2835_init(void)
     }
       
       /* Base of the peripherals block is mapped to VM */
-      bcm2835_peripherals = mapmem("gpio", bcm2835_peripherals_size, memfd, (uint32_t)bcm2835_peripherals_base);
+      bcm2835_peripherals = mapmem("gpio", bcm2835_peripherals_size, memfd, (uint32_t) (intptr_t) bcm2835_peripherals_base);
       if (bcm2835_peripherals == MAP_FAILED) goto exit;
       
       /* Now compute the base addresses of various peripherals, 
@@ -1412,17 +1413,18 @@ int bcm2835_init(void)
     {
       /* Not root, try /dev/gpiomem */
       /* Open the master /dev/mem device */
-      if ((memfd = open("/dev/gpiomem", O_RDWR | O_SYNC) ) < 0) 
-    {
-      fprintf(stderr, "bcm2835_init: Unable to open /dev/gpiomem: %s\n",
-          strerror(errno)) ;
-      goto exit;
-    }
+      if ((memfd = open("/dev/gpiomem", O_RDWR | O_SYNC) ) < 0)  {
+          fprintf(stderr, "bcm2835_init: Unable to open /dev/gpiomem: %s\n",
+                  strerror(errno)) ;
+          goto exit;
+      }
       
       /* Base of the peripherals block is mapped to VM */
       bcm2835_peripherals_base = 0;
-      bcm2835_peripherals = mapmem("gpio", bcm2835_peripherals_size, memfd, (uint32_t)bcm2835_peripherals_base);
-      if (bcm2835_peripherals == MAP_FAILED) goto exit;
+      bcm2835_peripherals = mapmem("gpio", bcm2835_peripherals_size, memfd, (uint32_t) (intptr_t) bcm2835_peripherals_base);
+      if (bcm2835_peripherals == MAP_FAILED)
+          goto exit;
+
       bcm2835_gpio = bcm2835_peripherals;
       ok = 1;
     }
@@ -1538,7 +1540,7 @@ int bcm2835_aux_spi_begin (void)
     bcm2835_gpio_fsel (21, BCM2835_GPIO_FSEL_ALT4); /* SPI1_SCLK */
 
 
-    bcm2835_aux_spi_setClockDivider(bcm2835_aux_spi_CalcClockDivider (100000));  // 100kHz
+    bcm2835_aux_spi_setClockDivider (BCM2835_SPI_CLOCK_DIVIDER_128);
 
     bcm2835_peri_write (bcm2835_aux + BCM2835_AUX_ENABLE/4, BCM2835_AUX_BIT_SPI1);
 
