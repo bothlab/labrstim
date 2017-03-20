@@ -74,7 +74,7 @@ run_galdur_adc_daq ()
         fclose (f);
     }
 
-    g_print ("Required time: %zu(sec) + %zu(nsec)\n", diff.tv_sec, diff.tv_nsec);
+    g_print ("Required time: %lld(sec) + %lld(nsec)\n", (long long) diff.tv_sec, (long long) diff.tv_nsec);
     g_print ("Sampled data written to /tmp\n");
 
     gld_adc_free (daq);
@@ -116,6 +116,8 @@ int main(int argc, char **argv)
 
     if (!gld_board_initialize ())
         return 1;
+
+    gld_board_set_spi_clock_divider (48); /* fast SPI connection */
 
     run_galdur_adc_daq ();
 
