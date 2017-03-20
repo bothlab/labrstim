@@ -30,3 +30,35 @@ gld_status_led_set (uint8_t state)
     /* set status LED on pin 17 */
     bcm2835_gpio_write (RPI_GPIO_P1_11, state);
 }
+
+/**
+ * gld_gpio_set_mode:
+ */
+void
+gld_gpio_set_mode (GldGPIOPin pin, GldGPIOMode mode)
+{
+    if (mode == GLD_GPIO_MODE_OUTPUT)
+        bcm2835_gpio_fsel (pin, BCM2835_GPIO_FSEL_OUTP);
+    else if (mode == GLD_GPIO_MODE_INPUT)
+        bcm2835_gpio_fsel (pin, BCM2835_GPIO_FSEL_INPT);
+    else if (mode == GLD_GPIO_MODE_PULLUP)
+        bcm2835_gpio_fsel (pin, BCM2835_GPIO_PUD_UP);
+}
+
+/**
+ * gld_gpio_set_value:
+ */
+void
+gld_gpio_set_value (GldGPIOPin pin, uint8_t state)
+{
+    bcm2835_gpio_write (pin, state);
+}
+
+/**
+ * gld_gpio_read_level:
+ */
+uint8_t
+gld_gpio_read_level (GldGPIOPin pin)
+{
+    return bcm2835_gpio_lev (pin);
+}
