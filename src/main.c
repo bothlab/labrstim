@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2016-2017 Matthias Klumpp <matthias@tenstral.net>
  * Copyright (C) 2011 Kevin Allen
  *
  * Licensed under the GNU General Public License Version 3
@@ -29,15 +30,10 @@
 #include "tasks.h"
 #include "stimpulse.h"
 
-
 /* misc */
 static const gchar *app_name = "labrstim";
 
 /* options */
-static gboolean opt_cmd_theta = FALSE;
-static gboolean opt_cmd_swr = FALSE;
-static gboolean opt_cmd_train = FALSE;
-
 static double opt_stimulation_theta_phase = 90;
 static double opt_swr_power_threshold;                  // as a z score
 static double opt_swr_convolution_peak_threshold = 0.5; // as a z score
@@ -57,11 +53,7 @@ static gboolean opt_delay_swr = FALSE;
 
 static double opt_swr_refractory = 0;
 
-static gboolean opt_version = FALSE;
-static gboolean opt_help = FALSE;
-
-
-static GOptionEntry option_entries[] =
+static GOptionEntry main_option_entries[] =
 {
     { "theta", 't', 0, G_OPTION_ARG_DOUBLE, &opt_stimulation_theta_phase,
         "Stimulation at the given theta phases", "theta_phase" },
@@ -97,13 +89,211 @@ static GOptionEntry option_entries[] =
     { "ttl_amplitude_volt", 'a', 0, G_OPTION_ARG_DOUBLE, &opt_swr_refractory,
         "Set the amplitude of the ttl pulse in volt", "V" },
 
-    { "version", 'v', 0, G_OPTION_ARG_NONE, &opt_version,
-        "Print the software version", NULL },
-    { "help", 'h', 0, G_OPTION_ARG_NONE, &opt_help,
-        "Print this text", NULL },
-
     { NULL }
 };
+
+/**
+ * labrstim_print_help_hint:
+ */
+static void
+labrstim_print_help_hint (const gchar *subcommand, const gchar *unknown_option)
+{
+    if (unknown_option != NULL)
+        g_printerr ("Option '%s' is unknown.\n", unknown_option);
+
+    if (subcommand == NULL)
+        g_printerr ("Run '%s --help' to see a full list of available command line options.\n", app_name);
+    else
+        g_printerr ("Run '%s --help' to see a list of available commands and options, and '%s %s --help' to see a list of options specific for this subcommand.\n",
+                    app_name, app_name, subcommand);
+}
+
+/**
+ * labrstim_new_subcommand_option_context:
+ *
+ * Create a new option context for a Labrstim subcommand.
+ */
+static GOptionContext*
+labrstim_new_subcommand_option_context (const gchar *command, const GOptionEntry *entries)
+{
+    GOptionContext *opt_context = NULL;
+    g_autofree gchar *summary = NULL;
+
+    opt_context = g_option_context_new ("- Labrstim CLI.");
+    g_option_context_set_help_enabled (opt_context, TRUE);
+    g_option_context_add_main_entries (opt_context, entries, NULL);
+
+    /* set the summary text */
+    summary = g_strdup_printf ("The '%s' command.", command);
+    g_option_context_set_summary (opt_context, summary);
+
+    return opt_context;
+}
+
+/**
+ * labrstim_option_context_parse:
+ *
+ * Parse the options, print errors.
+ */
+static int
+labrstim_option_context_parse (GOptionContext *opt_context, const gchar *subcommand, int *argc, char ***argv)
+{
+    g_autoptr(GError) error = NULL;
+
+    g_option_context_parse (opt_context, argc, argv, &error);
+    if (error != NULL) {
+        gchar *msg;
+        msg = g_strconcat (error->message, "\n", NULL);
+        g_print ("%s", msg);
+        g_free (msg);
+
+        labrstim_print_help_hint (subcommand, NULL);
+        return 1;
+    }
+
+    return 0;
+}
+
+/**
+ * labrstim_get_stim_parameters:
+ *
+ * Obtain additional session parameters.
+ */
+static gboolean
+labrstim_get_stim_parameters (char **argv, int argc, double *trial_duration_sec, double *pulse_duration_ms, double *laser_intensity_volt)
+{
+    /* check if we have the required number of arguments */
+    if (argc != 5) {
+        gint i;
+        fprintf (stderr, "Usage for %s is \n", app_name);
+        fprintf (stderr, "%s trial_duration_sec pulse_duration_ms laser_intensity_volts\n", argv[0]);
+        fprintf (stderr, "You need %d arguments but gave %d arguments: \n",
+                 3, argc - 2);
+        for (i = 1; i < argc; i++) {
+            fprintf (stderr, "%s\n", argv[i]);
+        }
+        return FALSE;
+    }
+
+    /* parse the arguments from the command line */
+    (*trial_duration_sec)   = atof (argv[2]);
+    (*pulse_duration_ms)    = atof (argv[3]);
+    (*laser_intensity_volt) = atof (argv[4]);
+
+    return TRUE;
+}
+
+/**
+ * labrstim_run_train:
+ *
+ * Do train a stimulation at a given frequency or at random intervals.
+ */
+static gint
+labrstim_run_train (char **argv, int argc)
+{
+    g_autoptr(GOptionContext) opt_context = NULL;
+    gint ret;
+    const gchar *command = "train";
+
+    double trial_duration_sec;
+    double pulse_duration_ms;
+    double laser_intensity_volt;
+
+    opt_context = labrstim_new_subcommand_option_context (command, main_option_entries);
+
+    /* parse all arguments and retrieve settings */
+    ret = labrstim_option_context_parse (opt_context, command, &argc, &argv);
+    if (ret != 0)
+        return ret;
+    if (!labrstim_get_stim_parameters (argv, argc, &trial_duration_sec, &pulse_duration_ms, &laser_intensity_volt))
+        return 1;
+
+    stimpulse_set_intensity (laser_intensity_volt);
+    perform_train_stimulation (opt_random,
+                                   trial_duration_sec,
+                                   pulse_duration_ms,
+                                   opt_minimum_interval_ms,
+                                   opt_maximum_interval_ms,
+                                   opt_train_frequency_hz);
+    return 0;
+}
+
+/**
+ * labrstim_run_theta:
+ *
+ * Do the theta stimulation.
+ */
+static gint
+labrstim_run_theta (char **argv, int argc)
+{
+    g_autoptr(GOptionContext) opt_context = NULL;
+    gint ret;
+    const gchar *command = "theta";
+
+    double trial_duration_sec;
+    double pulse_duration_ms;
+    double laser_intensity_volt;
+
+    opt_context = labrstim_new_subcommand_option_context (command, main_option_entries);
+
+    /* parse all arguments and retrieve settings */
+    ret = labrstim_option_context_parse (opt_context, command, &argc, &argv);
+    if (ret != 0)
+        return ret;
+    if (!labrstim_get_stim_parameters (argv, argc, &trial_duration_sec, &pulse_duration_ms, &laser_intensity_volt))
+        return 1;
+
+    stimpulse_set_intensity (laser_intensity_volt);
+    perform_theta_stimulation (opt_random,
+                                   trial_duration_sec,
+                                   pulse_duration_ms,
+                                   opt_stimulation_theta_phase,
+                                   opt_dat_file_name,
+                                   opt_channels_in_dat_file,
+                                   opt_offline_channel);
+    return 0;
+}
+
+/**
+ * labrstim_run_swr:
+ *
+ * Do SWR stimulation.
+ */
+static gint
+labrstim_run_swr (char **argv, int argc)
+{
+    g_autoptr(GOptionContext) opt_context = NULL;
+    gint ret;
+    const gchar *command = "swr";
+
+    double trial_duration_sec;
+    double pulse_duration_ms;
+    double laser_intensity_volt;
+
+    opt_context = labrstim_new_subcommand_option_context (command, main_option_entries);
+
+    /* parse all arguments and retrieve settings */
+    ret = labrstim_option_context_parse (opt_context, command, &argc, &argv);
+    if (ret != 0)
+        return ret;
+    if (!labrstim_get_stim_parameters (argv, argc, &trial_duration_sec, &pulse_duration_ms, &laser_intensity_volt))
+        return 1;
+
+    stimpulse_set_intensity (laser_intensity_volt);
+    perform_swr_stimulation (trial_duration_sec,
+                                 pulse_duration_ms,
+                                 opt_swr_refractory,
+                                 opt_swr_power_threshold,
+                                 opt_swr_convolution_peak_threshold,
+                                 opt_delay_swr,
+                                 opt_minimum_interval_ms,
+                                 opt_maximum_interval_ms,
+                                 opt_dat_file_name,
+                                 opt_channels_in_dat_file,
+                                 opt_offline_channel,
+                                 opt_swr_offline_reference);
+    return 0;
+}
 
 /**
  * init_random_seed:
@@ -118,31 +308,85 @@ init_random_seed ()
 }
 
 /**
+ * labrstim_get_summary:
+ **/
+static gchar*
+labrstim_get_summary ()
+{
+    GString *string;
+    string = g_string_new ("");
+
+    g_string_append_printf (string, "%s\n\n%s\n", "Laser Brain Stimulator",
+                /* these are commands we can use with labrstim */
+                "Subcommands:");
+
+    g_string_append_printf (string, "  %s - %s\n", "theta", "Theta stimulation.");
+    g_string_append_printf (string, "  %s - %s\n", "swr  ", "Sharp-wave-ripple detection and stimulation.");
+    g_string_append_printf (string, "  %s - %s\n", "train", "Train stimulation.");
+
+    g_string_append (string, "\n");
+    g_string_append (string, "You can find information about subcommand-specific options by passing \"--help\" to the subcommand.");
+
+    return g_string_free (string, FALSE);
+}
+
+/**
  * main:
  */
 int
 main (int argc, char *argv[])
 {
     GError *error = NULL;
-    GOptionContext *ocontext;
+    GOptionContext *opt_context;
     const gchar *command = NULL;
+    gchar *summary = NULL;
+    gint ret = 0;
+
+    static gboolean opt_show_version = FALSE;
+    static gboolean opt_verbose_mode = FALSE;
+    const GOptionEntry base_options[] = {
+        { "version", 0, 0,
+            G_OPTION_ARG_NONE,
+            &opt_show_version,
+            "Show the program version.",
+            NULL },
+        { "verbose", (gchar) 0, 0,
+            G_OPTION_ARG_NONE,
+            &opt_verbose_mode,
+            "Show extra debugging information.",
+            NULL },
+        { NULL }
+    };
 
     if (argc < 2) {
-		g_printerr ("%s\n", "You need to specify a command.");
-		g_printerr ("Run '%s --help' to see a full list of available command line options.\n", argv[0]);
-		return 1;
-	}
-	command = argv[1];
+        g_printerr ("%s\n", "You need to specify a command.");
+        g_printerr ("Run '%s --help' to see a full list of available command line options.\n", argv[0]);
+        return 1;
+    }
+    command = argv[1];
+
+    opt_context = g_option_context_new ("- Laser Brain Stimulator");
+
+    /* set help text */
+    summary = labrstim_get_summary ();
+    g_option_context_set_summary (opt_context, summary) ;
+    g_free (summary);
+
+    /* only attempt to show global help if we don't have a subcommand as first parameter (subcommands are never prefixed with "-") */
+    if (g_str_has_prefix (command, "-"))
+        g_option_context_set_help_enabled (opt_context, TRUE);
+    else
+        g_option_context_set_help_enabled (opt_context, FALSE);
+    g_option_context_set_ignore_unknown_options (opt_context, TRUE);
 
     /* parse our options */
-    ocontext = g_option_context_new ("- Laser Brain Stimulator");
-    g_option_context_add_main_entries (ocontext, option_entries, NULL);
-    if (!g_option_context_parse (ocontext, &argc, &argv, &error)) {
+    g_option_context_add_main_entries (opt_context, base_options, NULL);
+    if (!g_option_context_parse (opt_context, &argc, &argv, &error)) {
         g_printerr ("option parsing failed: %s\n", error->message);
         return 1;
     }
 
-    if (opt_version) {
+    if (opt_show_version) {
         printf ("%s %s\n", PACKAGE_NAME, PACKAGE_VERSION);
         printf ("%s\n", PACKAGE_COPYRIGHT);
         printf
@@ -152,47 +396,59 @@ main (int argc, char *argv[])
         return 0;
     }
 
-    if (opt_help) {
-        printf ("%s is a program to do laser brain stimulation\n", app_name);
-        printf ("Usage for %s is \n", app_name);
-        printf ("%s trial_duration_sec pulse_duration_ms laser_intensity_volts\n", app_name);
-        return 0;
+    /*
+     * declare the program as a reat time program
+     * the user will need to be root to do this
+     */
+    if (opt_dat_file_name == NULL) {        /* don't do it if we work offline */
+        struct sched_param param;
+        param.sched_priority = MY_PRIORITY;
+        if (sched_setscheduler (0, SCHED_FIFO, &param) == -1) {
+            fprintf (stderr, "%s : sched_setscheduler failed\n", app_name);
+            fprintf (stderr,
+                     "Do you have permission to run real-time applications? You might need to be root or use sudo\n");
+            return 1;
+        }
+        /* lock memory */
+        if (mlockall (MCL_CURRENT | MCL_FUTURE) == -1) {
+            fprintf (stderr, "%s: mlockall failed", app_name);
+            return 1;
+        }
+        /* pre-fault our stack */
+        unsigned char dummy[MAX_SAFE_STACK];
+        memset (&dummy, 0, MAX_SAFE_STACK);
     }
+
+    /* initialize DAQ board */
+    if (!gld_board_initialize ())
+        return 2;
+
+    /* set a random seed based on the time we launched */
+    init_random_seed ();
+
+    /* init GPIO */
+    stimpulse_gpio_init ();
 
     /* check which task we should execute */
     if (g_strcmp0 (command, "theta") == 0) {
-		opt_cmd_theta = TRUE;
-	} else if (g_strcmp0 (command, "swr") == 0) {
-		opt_cmd_swr = TRUE;
+        ret = labrstim_run_theta (argv, argc);
+    } else if (g_strcmp0 (command, "swr") == 0) {
+        ret = labrstim_run_swr (argv, argc);
     } else if (g_strcmp0 (command, "train") == 0) {
-		opt_cmd_train = TRUE;
+        ret = labrstim_run_train (argv, argc);
     } else {
         g_printerr ("You need to specify a valid command, '%s' is unknown.\n", command);
+        ret = 1;
     }
 
-    /* check if we have the required number of remaining args */
-    if (argc != 5) {
-        gint i;
-        fprintf (stderr, "Usage for %s is \n", app_name);
-        fprintf (stderr, "%s trial_duration_sec pulse_duration_ms laser_intensity_volts\n", argv[0]);
-        fprintf (stderr, "You need %d arguments but gave %d arguments: \n",
-                 3, argc - 2);
-        for (i = 1; i < argc; i++) {
-            fprintf (stderr, "%s\n", argv[i]);
-        }
-        return 1;
-    }
+    /* clear Galdur board state */
+    gld_board_shutdown ();
 
-    // variables read from arguments
-    double laser_intensity_volt;  // for laser power
-
-    // parce the arguments from the command line
-    double trial_duration_sec = atof (argv[2]);
-    double pulse_duration_ms = atof (argv[3]);
+    return ret;
+}
 
 
-    laser_intensity_volt = atof (argv[4]);
-
+#if 0
     /* validate parameters */
     // FIXME: both -t and -T are not permitted
 
@@ -346,85 +602,4 @@ main (int argc, char *argv[])
         }
     }
     */
-
-    /***********************************************
-    declare the program as a reat time program
-    the user will need to be root to do this
-    *************************************************/
-    if (opt_dat_file_name == NULL) {        // don't do it if you work offline
-        struct sched_param param;
-        param.sched_priority = MY_PRIORITY;
-        if (sched_setscheduler (0, SCHED_FIFO, &param) == -1) {
-            fprintf (stderr, "%s : sched_setscheduler failed\n", app_name);
-            fprintf (stderr,
-                     "Do you have permission to run real-time applications? You might need to be root or use sudo\n");
-            return 1;
-        }
-        // Lock memory
-        if (mlockall (MCL_CURRENT | MCL_FUTURE) == -1) {
-            fprintf (stderr, "%s: mlockall failed", app_name);
-            return 1;
-        }
-        // Pre-fault our stack
-        unsigned char dummy[MAX_SAFE_STACK];
-        memset (&dummy, 0, MAX_SAFE_STACK);
-    }
-
-    /* initialize DAQ board */
-    if (!gld_board_initialize ())
-        return 1;
-
-    /* set a random seed based on the time we launched */
-    init_random_seed ();
-
-    /* init laser intensity value */
-    stimpulse_gpio_init ();
-    stimpulse_set_intensity (laser_intensity_volt);
-
-    /* Do train a stimulation at a given frequency or at random intervals */
-    if (opt_cmd_train) {
-        perform_train_stimulation (opt_random,
-                                   trial_duration_sec,
-                                   pulse_duration_ms,
-                                   opt_minimum_interval_ms,
-                                   opt_maximum_interval_ms,
-                                   opt_train_frequency_hz);
-        goto finish;
-    }
-
-    /* Do the theta stimulation */
-    if (opt_cmd_theta) {
-        perform_theta_stimulation (opt_random,
-                                   trial_duration_sec,
-                                   pulse_duration_ms,
-                                   opt_stimulation_theta_phase,
-                                   opt_dat_file_name,
-                                   opt_channels_in_dat_file,
-                                   opt_offline_channel);
-        goto finish;
-    }
-
-
-    /* Do swr stimulation */
-    if (opt_cmd_swr) {
-        perform_swr_stimulation (trial_duration_sec,
-                                 pulse_duration_ms,
-                                 opt_swr_refractory,
-                                 opt_swr_power_threshold,
-                                 opt_swr_convolution_peak_threshold,
-                                 opt_delay_swr,
-                                 opt_minimum_interval_ms,
-                                 opt_maximum_interval_ms,
-                                 opt_dat_file_name,
-                                 opt_channels_in_dat_file,
-                                 opt_offline_channel,
-                                 opt_swr_offline_reference);
-        goto finish;
-    }
-
-finish:
-    /* clear Galdur board state */
-    gld_board_shutdown ();
-
-    return 0;
-}
+#endif
