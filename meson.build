@@ -5,6 +5,8 @@ labrstim_copyright = 'Kevin Allen <allen@uni-heidelberg.de> | Matthias Klumpp <m
 
 compiler = meson.get_compiler('c')
 
+add_global_arguments('-std=gnu11', language: 'c')
+
 message('This program will only run on Raspberry Pi 3 hardware with the Galdur board.')
 
 #
@@ -21,8 +23,6 @@ labrstim_src = [
     'src/utils.c',
     'src/tasks.h',
     'src/tasks.c',
-    'src/gpio.h',
-    'src/gpio.c',
     'src/stimpulse.h',
     'src/stimpulse.c'
 ]
@@ -46,11 +46,8 @@ conf.set_quoted('PACKAGE_COPYRIGHT', labrstim_copyright)
 
 conf.set('SIMULATE_DATA', get_option('simulate_data'))
 if get_option('debug_print')
-    conf.set('DEBUG_PRINT', 1)
-else
-    conf.set('DEBUG_PRINT', 0)
+    conf.set('DEBUG', 1)
 endif
-
 
 configure_file(input: 'config.h.in',
                output: 'config.h',

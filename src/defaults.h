@@ -23,8 +23,6 @@
 
 #define DEFAULT_SAMPLING_RATE 20048 // of the device
 
-//#define DEBUG_FFTW_INTER
-
 // defines for theta detection
 #define FFT_SIGNAL_DATA_SIZE_THETA 16384 // length of data segment to FFTW
 #define REAL_DATA_IN_SEGMENT_TO_FFT_THETA 10000 // half a second of data in FFTW, the rest is padding of 0 to avoid phase shift at the end due to beginning of signal
@@ -37,10 +35,6 @@
 #define MAX_FREQUENCY_DELTA 4
 #define MAX_PHASE_DIFFERENCE 10
 #define SLEEP_WHEN_NO_NEW_DATA_MS 0.2
-
-/* #define DEBUG_THETA */
-/* #define DEBUG_SWR */
-
 
 // defines for swr detection
 #define FFT_SIGNAL_DATA_SIZE_SWR 1024 // number of data points that goes into the fft, needs to be a 2^x number

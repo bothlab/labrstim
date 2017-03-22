@@ -18,8 +18,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LS_TIMESPEC_UTILS_H
-#define __LS_TIMESPEC_UTILS_H
+#ifndef __LS_UTILS_H
+#define __LS_UTILS_H
 
 #include "config.h"
 #include <time.h>
@@ -72,7 +72,11 @@ typedef struct
     // double nano_comp_ms=NANOSLEEP_OVERSHOOT;
 } TimeKeeper;
 
-#define debugln(fmt, ...) \
-            do { if (DEBUG_PRINT) g_debug (fmt, __VA_ARGS__); } while (0)
+#ifdef DEBUG
+ #define ls_debug(fmt, args...) g_print("DEBUG: %s:%d: " fmt, \
+                                    __FILE__, __LINE__, ##args)
+#else
+ #define ls_debug(fmt, args...) /* don't do anything in release builds */
+#endif
 
-#endif /* __LS_TIMESPEC_UTILS_H */
+#endif /* __LS_UTILS_H */

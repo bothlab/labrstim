@@ -3,7 +3,7 @@
 #mesondefine PACKAGE_VERSION
 #mesondefine PACKAGE_COPYRIGHT
 
-#mesondefine DEBUG_PRINT
+#mesondefine DEBUG
 #mesondefine SIMULATE_DATA
 
 #define LBS_UNUSED __attribute__ ((unused))

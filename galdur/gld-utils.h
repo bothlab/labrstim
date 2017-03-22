@@ -29,7 +29,11 @@ struct timespec gld_time_diff (struct timespec* start,
                       struct timespec* end);
 int gld_microsecond_from_timespec (struct timespec* duration);
 
-#define debugln(fmt, ...) \
-            do { if (DEBUG_PRINT) g_debug (fmt, __VA_ARGS__); } while (0)
+#ifdef DEBUG
+ #define gld_debug(fmt, args...) g_print("DEBUG: %s:%d: " fmt, \
+                                    __FILE__, __LINE__, ##args)
+#else
+ #define gld_debug(fmt, args...) /* don't do anything in release builds */
+#endif
 
 #endif /* __GLD_UTILS_H */

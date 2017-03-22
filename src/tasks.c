@@ -82,8 +82,8 @@ perform_train_stimulation (gboolean random, double trial_duration_sec, double pu
     clock_gettime (CLOCK_REALTIME, &tk.time_now);
     clock_gettime (CLOCK_REALTIME, &tk.time_last_stimulation);
 
-    /* initialize the stimulation GPIO pins */
-    stimpulse_gpio_init ();
+    /* initialize pins for stimulation */
+    stimpulse_init ();
 
     tk.elapsed_beginning_trial = gld_time_diff (&tk.time_beginning_trial, &tk.time_now);
     while (tk.elapsed_beginning_trial.tv_sec < tk.trial_duration_sec) { // loop until the trial is over
@@ -193,13 +193,11 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
         gld_set_timespec_from_ms (STIMULATION_REFRACTORY_PERIOD_THETA_MS);
 
     // start the acquisition thread, which will run in the background until comedi_inter.is_acquiring is set to 0
-#ifdef DEBUG_THETA
-    fprintf (stderr, "starting acquisition\n");
-#endif
+    ls_debug ("Starting acquisition\n");
 
     gld_adc_set_acq_frequency (daq, 3000); /* 3 kHz */
 
-#ifdef DEBUG_THETA
+#ifdef DEBUG
     // to check the intervals before getting new data.
     clock_gettime (CLOCK_REALTIME, &tk.time_previous_new_data);
     long int counter = 0;
@@ -212,12 +210,10 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
     tk.elapsed_beginning_trial =
         gld_time_diff (&tk.time_beginning_trial, &tk.time_now);
 
-    /* initialize the stimulation GPIO pins */
-    stimpulse_gpio_init ();
+    /* initialize the stimulation output */
+    stimpulse_init ();
 
-#ifdef DEBUG_THETA
-    fprintf (stderr, "start trial loop\n");
-#endif
+    ls_debug ("Start trial loop\n");
 
     /* loop until the trial is over */
     while (tk.elapsed_beginning_trial.tv_sec < tk.trial_duration_sec) {
@@ -285,12 +281,11 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
             }
         }
 
-#ifdef DEBUG_THETA
+#ifdef DEBUG
         clock_gettime (CLOCK_REALTIME, &tk.time_current_new_data);
         tk.duration_previous_current_new_data =
             gld_time_diff (&tk.time_previous_new_data, &tk.time_current_new_data);
-        fprintf (stderr,
-                 "%ld, last_sample_no: %ld  with interval %lf(us)\n",
+        g_printerr ("%ld, last_sample_no: %ld  with interval %lf(us)\n",
                  counter++, last_sample_no,
                  tk.duration_previous_current_new_data.tv_nsec / 1000.0);
         tk.time_previous_new_data = tk.time_current_new_data;
@@ -309,9 +304,9 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
 
         theta_delta_ratio =
             fftw_interface_theta_delta_ratio (&fftw_inter);
-#ifdef DEBUG_THETA
-        fprintf (stderr, "theta_delta_ratio: %lf\n", theta_delta_ratio);
-#endif
+
+        ls_debug ("theta_delta_ratio: %lf\n", theta_delta_ratio);
+
         if (theta_delta_ratio > THETA_DELTA_RATIO) {
             clock_gettime (CLOCK_REALTIME, &tk.time_now);
             tk.elapsed_last_acquired_data =
@@ -324,12 +319,11 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
                                                 theta_frequency);
             // phase difference between wanted and what it is now, from -180 to 180
             phase_diff = phase_difference (current_phase, stimulation_theta_phase);
-#ifdef DEBUG_THETA
-            fprintf (stderr,
-                     "stimulation_theta_phase: %lf current_phase: %lf phase_difference: %lf\n",
+
+            ls_debug ("stimulation_theta_phase: %lf current_phase: %lf phase_difference: %lf\n",
                      stimulation_theta_phase, current_phase,
                      phase_diff);
-#endif
+
             // if the absolute phase difference is smaller than the max_phase_difference
             if (sqrt (phase_diff * phase_diff) < max_phase_diff) {
                 // if we are just before the stimulation phase, we nanosleep to be bang on the correct phase
@@ -363,12 +357,10 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
                     /* end of the pulse */
                     stimpulse_set_trigger_low ();
 
-#ifdef DEBUG_THETA
-                    fprintf (stderr,
-                             "interval from last stimulation: %ld (us)\n",
+                    ls_debug ("interval from last stimulation: %ld (us)\n",
                              tk.elapsed_last_stimulation.tv_nsec /
                              1000);
-#endif
+
                 }
             }
         }
@@ -456,6 +448,9 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
     if (offline_data_file == NULL) {
         /* we are not using a dat file, set up data acquisition */
         gld_adc_set_acq_frequency (daq, 3000); /* 3 kHz */
+
+        /* initialize the stimulation output */
+        stimpulse_init ();
     } else {
         /* the program is running from a data file. allocate memory for 2 arrays. */
 
@@ -483,11 +478,12 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
         }
     }
 
-#ifdef DEBUG_SWR
+#ifdef DEBUG
     // to check the intervals before getting new data.
     clock_gettime (CLOCK_REALTIME, &tk.time_previous_new_data);
     long int counter = 0;
 #endif
+
     // get time at beginning of trial
     clock_gettime (CLOCK_REALTIME, &tk.time_beginning_trial);
     clock_gettime (CLOCK_REALTIME, &tk.time_now);
@@ -497,10 +493,9 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
     tk.duration_refractory_period = gld_set_timespec_from_ms (swr_refractory);    // set the refractory period for stimulation
 
     // loop until the time is over
-#ifdef DEBUG_SWR
+
     // to check the intervals before getting new data.
-    fprintf (stderr, "starting trial loop for swr\n");
-#endif
+    ls_debug ("Starting trial loop for swr\n");
 
     /* loop while the trial is running */
     while (tk.elapsed_beginning_trial.tv_sec < tk.trial_duration_sec) {
@@ -640,10 +635,10 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
                  || tk.elapsed_last_stimulation.tv_sec >
                  tk.duration_refractory_period.tv_sec)) {
 
-#ifdef DEBUG_SWR
+#ifdef DEBUG
                 printf ("%ld\n", last_sample_no);
                 for (i = 0; i < fftw_inter_swr.real_data_to_fft_size; i++) {
-                    printf ("%lf %lf %zu\n", fftw_inter_swr.signal_data[i],
+                    g_print ("%lf %lf %lf\n", fftw_inter_swr.signal_data[i],
                             fftw_inter_swr.filtered_signal_swr[i],
                             fftw_inter_swr.convoluted_signal[i]);
                 }
@@ -701,7 +696,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
         nanosleep (&tk.duration_sleep_between_swr_processing, &tk.req);
         tk.elapsed_beginning_trial = gld_time_diff (&tk.time_beginning_trial, &tk.time_now);
 
-#ifdef DEBUG_SWR
+#ifdef DEBUG
         tk.duration_previous_current_new_data =
             gld_time_diff (&tk.time_previous_new_data, &tk.time_last_acquired_data);
         tk.time_previous_new_data = tk.time_last_acquired_data;
@@ -713,6 +708,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
                  tk.duration_previous_current_new_data.tv_nsec / 1000.0,
                  swr_power, swr_power_threshold, swr_convolution_peak);
 #endif
+
     } /* stimulation trial is over */
 
     fftw_interface_swr_free (&fftw_inter_swr);
