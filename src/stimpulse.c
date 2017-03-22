@@ -20,29 +20,25 @@
 #include "stimpulse.h"
 
 #include <glib.h>
+#include <galdur.h>
 
-#include "gpio.h"
 
 /**
- * stimpulse_init_gpio:
+ * stimpulse_init:
  */
 void
-stimpulse_gpio_init (void)
+stimpulse_init (void)
 {
-    gpio_export (GPIO_PIN_INTENSITY);
-    gpio_export (GPIO_PIN_TRIGGER);
-
-    gpio_set_direction (GPIO_PIN_INTENSITY, GPIO_OUT);
-    gpio_set_direction (GPIO_PIN_TRIGGER, GPIO_OUT);
+    gld_gpio_set_mode (LS_STIM_PIN, GLD_GPIO_MODE_OUTPUT);
 }
 
 /**
  * stimpulse_set_intensity:
  */
 void
-stimpulse_set_intensity (double value)
+stimpulse_set_intensity (uint16_t value)
 {
-    gpio_write (GPIO_PIN_INTENSITY, value);
+    gld_dac_set_value (LS_INTENSITY_CHANNEL, value);
 }
 
 /**
@@ -51,7 +47,7 @@ stimpulse_set_intensity (double value)
 void
 stimpulse_set_trigger_high (void)
 {
-    gpio_write (GPIO_PIN_TRIGGER, GPIO_HIGH);
+    gld_gpio_set_value (LS_STIM_PIN, GLD_GPIO_HIGH);
 }
 
 /**
@@ -60,5 +56,5 @@ stimpulse_set_trigger_high (void)
 void
 stimpulse_set_trigger_low (void)
 {
-    gpio_write (GPIO_PIN_TRIGGER, GPIO_LOW);
+    gld_gpio_set_value (LS_STIM_PIN, GLD_GPIO_LOW);
 }

@@ -568,9 +568,6 @@ main (int argc, char *argv[])
     /* set a random seed based on the time we launched */
     labrstim_init_random_seed ();
 
-    /* init GPIO */
-    stimpulse_gpio_init ();
-
     /* check which task we should execute */
     if (g_strcmp0 (command, "theta") == 0) {
         ret = labrstim_run_theta (command, argv, argc);

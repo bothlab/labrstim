@@ -23,12 +23,12 @@
 #include <glib.h>
 #include <stdint.h>
 
-#define GPIO_PIN_INTENSITY 6
-#define GPIO_PIN_TRIGGER 12
+#define LS_STIM_PIN GLD_GPIO_PIN_27
+#define LS_INTENSITY_CHANNEL 0
 
-void            stimpulse_gpio_init (void);
+void            stimpulse_init (void);
 
-void            stimpulse_set_intensity (double value);
+void            stimpulse_set_intensity (uint16_t value);
 
 void            stimpulse_set_trigger_high (void);
 void            stimpulse_set_trigger_low (void);
