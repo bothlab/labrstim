@@ -413,6 +413,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
 {
     TimeKeeper tk;
     GldAdc *daq;
+    gboolean ret = FALSE;
 
     /* variables to work offline from a dat file */
     data_file_si data_file;
@@ -459,18 +460,12 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
             return FALSE;
         }
 
-        if ((data_from_file =
-                 (short *) malloc (sizeof (short) *
-                                   fftw_inter_swr.real_data_to_fft_size)) ==
-            NULL) {
+        if ((data_from_file = (short *) malloc (sizeof (short) * fftw_inter_swr.real_data_to_fft_size)) == NULL) {
             fprintf (stderr,
                      "Problem allocating memory for data_from_file\n");
             return FALSE;
         }
-        if ((ref_from_file =
-                 (short *) malloc (sizeof (short) *
-                                   fftw_inter_swr.real_data_to_fft_size)) ==
-            NULL) {
+        if ((ref_from_file = (short *) malloc (sizeof (short) * fftw_inter_swr.real_data_to_fft_size)) == NULL) {
             fprintf (stderr,
                      "Problem allocating memory for ref_from_file\n");
             return FALSE;
@@ -512,7 +507,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
             if (!gld_adc_acquire_data (daq, fftw_inter_swr.real_data_to_fft_size * 2)) {
                 fprintf (stderr,
                          "Unable to acquire samples, swr stimulation not possible\n");
-                return FALSE;
+                goto out;
             }
 
             while (acquire_data) {
@@ -565,7 +560,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
                     fprintf (stderr,
                              "Problem with data_file_si_get_data_one_channel, first index: %d, last index: %zu\n", 0,
                              fftw_inter_swr.real_data_to_fft_size - 1);
-                    return FALSE;
+                    goto out;
                 }
                 if ((data_file_si_get_data_one_channel
                      (&data_file, offline_reference_channel, ref_from_file, 0,
@@ -573,7 +568,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
                     fprintf (stderr,
                              "Problem with data_file_si_get_data_one_channel, first index: %d, last index: %zu\n", 0,
                              fftw_inter_swr.real_data_to_fft_size - 1);
-                    return FALSE;
+                    goto out;
                 }
                 last_sample_no = fftw_inter_swr.real_data_to_fft_size - 1;
             } else {
@@ -591,7 +586,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
                     g_printerr ("Problem with data_file_si_get_data_one_channel, first index: %zu, last index: %zu\n",
                                 last_sample_no + new_samples_per_read_operation - fftw_inter_swr.real_data_to_fft_size,
                                 last_sample_no + new_samples_per_read_operation - 1);
-                    return FALSE;
+                    goto out;
                 }
                 if ((data_file_si_get_data_one_channel
                      (&data_file, offline_reference_channel, ref_from_file,
@@ -600,7 +595,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
                     g_printerr ("Problem with data_file_si_get_data_one_channel, first index: %zu, last index: %zu\n",
                              last_sample_no + new_samples_per_read_operation - fftw_inter_swr.real_data_to_fft_size,
                              last_sample_no + new_samples_per_read_operation - 1);
-                    return FALSE;
+                    goto out;
                 }
                 last_sample_no =
                     last_sample_no + new_samples_per_read_operation - 1;
@@ -650,7 +645,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
                          tk.duration_previous_current_new_data.tv_nsec /
                          1000.0, swr_power, swr_power_threshold,
                          swr_convolution_peak);
-                return FALSE;
+                //! goto out;
 #endif
 
                 /* stimulation time!! */
@@ -718,6 +713,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
         }
     }
 
+    ret = TRUE;
 out:
     /* free daq interface */
     gld_adc_free (daq);
@@ -732,5 +728,5 @@ out:
         free (ref_from_file);
     }
 
-    return TRUE;
+    return ret;
 }
