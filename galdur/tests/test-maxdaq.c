@@ -54,7 +54,7 @@ test_daq_speed ()
         fclose (f);
     }
 
-    g_print ("Required time: %zu(sec) + %zu(nsec)\n", diff.tv_sec, diff.tv_nsec);
+    g_print ("Required time: %lld(sec) + %lld(nsec)\n", (long long) diff.tv_sec, (long long) diff.tv_nsec);
     g_print ("Sampled data written to /tmp\n");
 
     gld_adc_free (daq);

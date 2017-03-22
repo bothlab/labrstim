@@ -18,6 +18,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <inttypes.h>
 
 #define BCK2835_LIBRARY_BUILD
 #include "bcm2835.h"
@@ -460,9 +461,9 @@ void bcm2835_delayMicroseconds(uint64_t micros)
 
     if (debug)
     {
-    /* Cant access sytem timers in debug mode */
-    printf("bcm2835_delayMicroseconds %lu\n", micros);
-    return;
+        /* Cant access sytem timers in debug mode */
+        printf("bcm2835_delayMicroseconds %" PRIu64 "\n", micros);
+        return;
     }
 
     /* Calling nanosleep() takes at least 100-200 us, so use it for
