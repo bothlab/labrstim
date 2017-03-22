@@ -33,7 +33,7 @@ fftw_interface_theta_init (struct fftw_interface_theta *fftw_int)
     unsigned int i;
     // the next 3 variables should be set according to argument pass to this function.
     // that way the size of signal analyzed could be set in main.c according to options
-    fftw_int->sampling_rate = DEFAULT_SAMPLING_RATE;
+    fftw_int->sampling_rate = LS_DEFAULT_SAMPLING_RATE;
     fftw_int->fft_signal_data_size = FFT_SIGNAL_DATA_SIZE_THETA;  // should be a power of 2
     fftw_int->power_signal_length = DATA_IN_SEGMENT_TO_POWER_THETA;       // last data on which to calculate power, for theta/delta ratio
     fftw_int->real_data_to_fft_size = REAL_DATA_IN_SEGMENT_TO_FFT_THETA;
@@ -425,7 +425,7 @@ fftw_interface_swr_init (struct fftw_interface_swr *fftw_int)
     unsigned int i;
     // the next 3 variables should be set according to argument pass to this function.
     // that way the size of signal analyzed could be set in main.c according to options
-    fftw_int->sampling_rate = DEFAULT_SAMPLING_RATE;
+    fftw_int->sampling_rate = LS_DEFAULT_SAMPLING_RATE;
     fftw_int->fft_signal_data_size = FFT_SIGNAL_DATA_SIZE_SWR;    // should be a power of 2
     fftw_int->power_signal_length = DATA_IN_SEGMENT_TO_POWER_SWR;
     fftw_int->real_data_to_fft_size = REAL_DATA_IN_SEGMENT_TO_FFT_SWR;

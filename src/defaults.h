@@ -21,9 +21,18 @@
 #ifndef __LS_DEFAULTS_H
 #define __LS_DEFAULTS_H
 
-#define DEFAULT_SAMPLING_RATE 20048 // of the device
+/* size of the Galdur ADC ring buffer (2 bytes per int16 -> ~128MB buffer) */
+#define LS_DATA_BUFFER_SIZE 1024 * 1024 * 64
 
-// defines for theta detection
+/* ADC sampling speed per channel */
+#define LS_DEFAULT_SAMPLING_RATE 20048
+
+/* channel defaults */
+#define LS_ADC_CHANNEL_COUNT 2
+#define LS_SCAN_CHAN 0 /* analyze channel */
+#define LS_REF_CHAN  1 /* reference channel */
+
+/* defaults for theta detection */
 #define FFT_SIGNAL_DATA_SIZE_THETA 16384 // length of data segment to FFTW
 #define REAL_DATA_IN_SEGMENT_TO_FFT_THETA 10000 // half a second of data in FFTW, the rest is padding of 0 to avoid phase shift at the end due to beginning of signal
 #define DATA_IN_SEGMENT_TO_POWER_THETA 10000 // half of second of data to calculate the theta/delta ratio
@@ -36,7 +45,7 @@
 #define MAX_PHASE_DIFFERENCE 10
 #define SLEEP_WHEN_NO_NEW_DATA_MS 0.2
 
-// defines for swr detection
+/* defaults for SWR detection */
 #define FFT_SIGNAL_DATA_SIZE_SWR 1024 // number of data points that goes into the fft, needs to be a 2^x number
 #define REAL_DATA_IN_SEGMENT_TO_FFT_SWR 400 // the is the number of singal data point that will go in the fft
                                                                                      // the rest will be filled with 0. window size
@@ -52,25 +61,16 @@
 #define INTERVAL_DURATION_BETWEEN_SWR_PROCESSING_MS 5 // the program will sleep 5 ms between each calculation of ripple power
 #define SIZE_ROOT_MEAN_SQUARE_ARRAY 10000
 
+/* RT process defaults */
+#define MY_PRIORITY     49      /* we use 49 as the PRREMPT_RT use 50
+                                   as the priority of kernel tasklets
+                                   and interrupt handler by default */
 
-// defines for setting device and channels that control the laser
-#define DEVICE_INDEX_FOR_STIMULATION 0
-#define CHANNEL_FOR_PULSE 1 // analog output channel
-#define CHANNEL_FOR_LASER_INTENSITY 0 // analog output channel
-#define BRAIN_CHANNEL_1 0 // analog input channel for theta and swr stimulation
-#define BRAIN_CHANNEL_2 1 // analog input channel for reference signal for swr stimulation
-
-/// for the real time process
-#define MY_PRIORITY 49 /* we use 49 as the PRREMPT_RT use 50
-                            as the priority of kernel tasklets
-                            and interrupt handler by default */
 #define MAX_SAFE_STACK (8*1024) /* The maximum stack size which is
                                    guranteed safe to access without
                                    faulting */
+
 #define NSEC_PER_SEC    (1000000000) /* The number of nsecs per sec. */
-
 #define NANOSLEEP_OVERSHOOT 0.0080000
-
-#define DEFAULT_DAQ_SPI_DEVICE "/dev/spidev0.0"
 
 #endif /* __LS_DEFAULTS_H */

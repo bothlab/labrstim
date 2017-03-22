@@ -137,6 +137,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
 {
     TimeKeeper tk;
     GldAdc *daq;
+    gboolean ret = FALSE;
 
     /* variables to work offline from a dat file */
     int new_samples_per_read_operation = 60; /* 3 ms of data */
@@ -166,7 +167,9 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
     /* structure with variables to do the filtering of signal */
     struct fftw_interface_theta fftw_inter;
 
-    daq = gld_adc_new (2, 10000);
+    /* configure ADC */
+    daq = gld_adc_new (LS_ADC_CHANNEL_COUNT, LS_DATA_BUFFER_SIZE);
+    gld_adc_set_acq_frequency (daq, LS_DEFAULT_SAMPLING_RATE);
 
     if (fftw_interface_theta_init (&fftw_inter) == -1) {
         fprintf (stderr, "Could not initialize fftw_interface_theta\n");
@@ -181,9 +184,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
         }
 
         // if get data from dat file, allocate memory to store short integer from dat file
-        if ((data_from_file =
-                 (short *) malloc (sizeof (short) *
-                                   fftw_inter.real_data_to_fft_size)) == NULL) {
+        if ((data_from_file = (short *) malloc (sizeof (short) * fftw_inter.real_data_to_fft_size)) == NULL) {
             fprintf (stderr,
                      "Problem allocating memory for data_from_file\n");
             return FALSE;
@@ -194,8 +195,6 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
 
     // start the acquisition thread, which will run in the background until comedi_inter.is_acquiring is set to 0
     ls_debug ("Starting acquisition\n");
-
-    gld_adc_set_acq_frequency (daq, 3000); /* 3 kHz */
 
 #ifdef DEBUG
     // to check the intervals before getting new data.
@@ -223,7 +222,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
         if (!gld_adc_acquire_data (daq, fftw_inter.real_data_to_fft_size)) {
             fprintf (stderr,
                      "Unable to acquire samples, swr stimulation not possible\n");
-            return FALSE;
+            goto out;
         }
 
         if (offline_data_file == NULL) {
@@ -232,7 +231,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
                 int16_t data;
 
                 /* get data from MAX1133 ADC chip */
-                if (gld_adc_get_data (daq, 0, &data)) {
+                if (gld_adc_get_data (daq, LS_SCAN_CHAN, &data)) {
                     fftw_inter.signal_data[data_slice_pos] = data;
                     data_slice_pos++;
                 } else {
@@ -255,7 +254,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
                 if ((data_file_si_get_data_one_channel (&data_file, offline_channel, data_from_file, 0, fftw_inter.real_data_to_fft_size)) != 0) {
                     fprintf (stderr, "Problem with data_file_si_get_data_one_channel, first index: %d, last index: %zu\n",
                              0, fftw_inter.real_data_to_fft_size);
-                    return FALSE;
+                    goto out;
                 }
                 last_sample_no = fftw_inter.real_data_to_fft_size;
             } else {
@@ -270,7 +269,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
                              "Problem with data_file_si_get_data_one_channel, first index: %ld, last index: %ld\n",
                              last_sample_no + new_samples_per_read_operation - fftw_inter.real_data_to_fft_size,
                              last_sample_no + new_samples_per_read_operation);
-                    return FALSE;
+                    goto out;
                 }
                 last_sample_no =
                     last_sample_no + new_samples_per_read_operation;
@@ -379,9 +378,11 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
     /* this will stop the acquisition thread */
     if (!gld_adc_reset (daq)) {
         fprintf (stderr, "Could not stop data acquisition\n");
-        return FALSE;
+        goto out;
     }
 
+    ret = TRUE; /* success */
+out:
     /* free the memory used by fftw_inter */
     fftw_interface_theta_free (&fftw_inter);
 
@@ -397,7 +398,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
         free (data_from_file);
     }
 
-    return TRUE;
+    return ret;
 }
 
 /**
@@ -436,8 +437,9 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
     tk.interval_duration_between_swr_processing =
         gld_set_timespec_from_ms (INTERVAL_DURATION_BETWEEN_SWR_PROCESSING_MS);
 
-    /* create DAQ interface */
-    daq = gld_adc_new (2, 10000);
+    /* create ADC interface and configure it */
+    daq = gld_adc_new (LS_ADC_CHANNEL_COUNT, LS_DATA_BUFFER_SIZE);
+    gld_adc_set_acq_frequency (daq, LS_DEFAULT_SAMPLING_RATE);
 
     /* initialize fftw interface */
     if (fftw_interface_swr_init (&fftw_inter_swr) == -1) {
@@ -446,9 +448,6 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
     }
 
     if (offline_data_file == NULL) {
-        /* we are not using a dat file, set up data acquisition */
-        gld_adc_set_acq_frequency (daq, 3000); /* 3 kHz */
-
         /* initialize the stimulation output */
         stimpulse_init ();
     } else {
@@ -521,9 +520,9 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
                 int16_t data_ref;
                 gboolean data_acquired = FALSE;
 
-                /* get data from MAX1133 ADC chip, data channel */
+                /* get data from ADC chip, data channel */
                 if (data_slice_pos < fftw_inter_swr.real_data_to_fft_size) {
-                    if (gld_adc_get_data (daq, 0, &data)) {
+                    if (gld_adc_get_data (daq, LS_SCAN_CHAN, &data)) {
                         fftw_inter_swr.signal_data[data_slice_pos] = data;
                         data_slice_pos++;
                         data_acquired = TRUE;
@@ -532,9 +531,9 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
                     acquire_data = FALSE;
                 }
 
-                /* get data from MAX1133 ADC chip, reference channel */
+                /* get data from ADC chip, reference channel */
                 if (data_ref_slice_pos < fftw_inter_swr.real_data_to_fft_size) {
-                    if (gld_adc_get_data (daq, 1, &data_ref)) {
+                    if (gld_adc_get_data (daq, LS_REF_CHAN, &data_ref)) {
                         fftw_inter_swr.ref_signal_data[data_ref_slice_pos] = data_ref;
                         data_ref_slice_pos++;
                         data_acquired = TRUE;
@@ -684,7 +683,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
                     // print the res value of the stimulation time
                     g_print ("%zu\n", last_sample_no);
                     // move forward in file by the duration of the pulse
-                    last_sample_no = last_sample_no + (tk.pulse_duration_ms * DEFAULT_SAMPLING_RATE / 1000);
+                    last_sample_no = last_sample_no + (tk.pulse_duration_ms * LS_DEFAULT_SAMPLING_RATE / 1000);
                 }
             }
         }
@@ -715,10 +714,11 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
     if (offline_data_file == NULL) {
         if (!gld_adc_reset (daq)) {
             fprintf (stderr, "Could not stop data acquisition\n");
-            return FALSE;
+            goto out;
         }
     }
 
+out:
     /* free daq interface */
     gld_adc_free (daq);
 
