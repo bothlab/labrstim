@@ -85,14 +85,14 @@ labrstim_print_help_hint (const gchar *subcommand, const gchar *unknown_option)
  * Create a new option context for a Labrstim subcommand.
  */
 static GOptionContext*
-labrstim_new_subcommand_option_context (const gchar *command)
+labrstim_new_subcommand_option_context (const gchar *command, const GOptionEntry *entries)
 {
     GOptionContext *opt_context = NULL;
     g_autofree gchar *summary = NULL;
 
     opt_context = g_option_context_new ("- Labrstim CLI.");
     g_option_context_set_help_enabled (opt_context, TRUE);
-    g_option_context_add_main_entries (opt_context, generic_option_entries, NULL);
+    g_option_context_add_main_entries (opt_context, entries, NULL);
 
     /* set the summary text */
     summary = g_strdup_printf ("The '%s' command.", command);
@@ -243,8 +243,7 @@ labrstim_run_train (const gchar *command, char **argv, int argc)
 
     /* NOTE: if both -T and -R parameters are specified, -T is ignored if -R is present */
 
-    opt_context = labrstim_new_subcommand_option_context (command);
-    g_option_context_add_main_entries (opt_context, train_stim_options, NULL);
+    opt_context = labrstim_new_subcommand_option_context (command, train_stim_options);
 
     /* parse all arguments and retrieve settings */
     ret = labrstim_option_context_parse (opt_context, command, &argc, &argv);
@@ -259,7 +258,8 @@ labrstim_run_train (const gchar *command, char **argv, int argc)
         return 3;
     }
 
-    stimpulse_set_intensity (laser_intensity_volt);
+    if (opt_dat_filename == NULL)
+        stimpulse_set_intensity (laser_intensity_volt);
     perform_train_stimulation (opt_random,
                                trial_duration_sec,
                                pulse_duration_ms,
@@ -295,8 +295,7 @@ labrstim_run_theta (const gchar *command, char **argv, int argc)
         { NULL }
     };
 
-    opt_context = labrstim_new_subcommand_option_context (command);
-    g_option_context_add_main_entries (opt_context, theta_stim_options, NULL);
+    opt_context = labrstim_new_subcommand_option_context (command, theta_stim_options);
 
     /* parse all arguments and retrieve settings */
     ret = labrstim_option_context_parse (opt_context, command, &argc, &argv);
@@ -312,7 +311,8 @@ labrstim_run_theta (const gchar *command, char **argv, int argc)
         return 1;
     }
 
-    stimpulse_set_intensity (laser_intensity_volt);
+    if (opt_dat_filename == NULL)
+        stimpulse_set_intensity (laser_intensity_volt);
     perform_theta_stimulation (opt_random,
                                trial_duration_sec,
                                pulse_duration_ms,
@@ -362,8 +362,7 @@ labrstim_run_swr (const gchar *command, char **argv, int argc)
         { NULL }
     };
 
-    opt_context = labrstim_new_subcommand_option_context (command);
-    g_option_context_add_main_entries (opt_context, swr_stim_options, NULL);
+    opt_context = labrstim_new_subcommand_option_context (command, swr_stim_options);
 
     /* parse all arguments and retrieve settings */
     ret = labrstim_option_context_parse (opt_context, command, &argc, &argv);
@@ -409,7 +408,8 @@ labrstim_run_swr (const gchar *command, char **argv, int argc)
         return 3;
     }
 
-    stimpulse_set_intensity (laser_intensity_volt);
+    if (opt_dat_filename == NULL)
+        stimpulse_set_intensity (laser_intensity_volt);
     perform_swr_stimulation (trial_duration_sec,
                              pulse_duration_ms,
                              opt_swr_refractory,
@@ -540,6 +540,8 @@ main (int argc, char *argv[])
 
     /* parse our options */
     g_option_context_add_main_entries (opt_context, base_options, NULL);
+    g_option_context_add_main_entries (opt_context, generic_option_entries, NULL);
+
     if (!g_option_context_parse (opt_context, &argc, &argv, &error)) {
         g_printerr ("option parsing failed: %s\n", error->message);
         return 1;
@@ -555,15 +557,17 @@ main (int argc, char *argv[])
         return 0;
     }
 
-    /* give the program realtime priority if we are not running from an offline file */
     if (opt_dat_filename == NULL) {
+        /* give the program realtime priority if we are not running from an offline file */
         if (!labrstim_make_realtime ())
+            return 5;
+
+        /* initialize DAQ board */
+        if (!gld_board_initialize ())
             return 5;
     }
 
-    /* initialize DAQ board */
-    if (!gld_board_initialize ())
-        return 5;
+
 
     /* set a random seed based on the time we launched */
     labrstim_init_random_seed ();
@@ -581,7 +585,8 @@ main (int argc, char *argv[])
     }
 
     /* clear Galdur board state */
-    gld_board_shutdown ();
+    if (opt_dat_filename == NULL)
+        gld_board_shutdown ();
 
     return ret;
 }

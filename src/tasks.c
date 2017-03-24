@@ -57,10 +57,9 @@ perform_train_stimulation (gboolean random, double trial_duration_sec, double pu
         tk.inter_pulse_duration = gld_set_timespec_from_ms (tk.inter_pulse_duration_ms);
         tk.end_to_start_pulse_ms = tk.inter_pulse_duration_ms - tk.pulse_duration_ms;
         if (tk.end_to_start_pulse_ms <= 0) {
-            fprintf (stderr, "tk.end_to_start_pulse_ms <= 0, %lf\n",
-                     tk.end_to_start_pulse_ms);
-            fprintf (stderr,
-                     "The length of the pulse longer than the minimum_interval_ms\n");
+            g_printerr ("tk.end_to_start_pulse_ms <= 0, %lf\n",
+                        tk.end_to_start_pulse_ms);
+            g_printerr ("The length of the pulse is longer than the minimum_interval_ms\n");
             return FALSE;
         }
     } else {
@@ -69,10 +68,9 @@ perform_train_stimulation (gboolean random, double trial_duration_sec, double pu
         tk.inter_pulse_duration = gld_set_timespec_from_ms (tk.inter_pulse_duration_ms);
         tk.end_to_start_pulse_ms = tk.inter_pulse_duration_ms - tk.pulse_duration_ms;
         if (tk.end_to_start_pulse_ms <= 0) {
-            fprintf (stderr, "tk.end_to_start_pulse_ms <= 0, %lf\n",
-                     tk.end_to_start_pulse_ms);
-            fprintf (stderr,
-                     "Is the length of the pulse longer than the inter pulse duration?\n");
+            g_printerr ("tk.end_to_start_pulse_ms <= 0, %lf\n",
+                        tk.end_to_start_pulse_ms);
+            g_printerr ("Is the length of the pulse longer than the inter pulse duration?\n");
             return FALSE;
         }
     }
