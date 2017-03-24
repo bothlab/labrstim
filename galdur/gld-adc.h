@@ -28,10 +28,12 @@ typedef struct
     struct _DataBuffer **buffer;
     guint       channel_count;
     pthread_t   tid;
-    volatile gboolean running;
 
     guint acq_frequency;
     size_t sample_max_count;
+
+    volatile gboolean running;
+    volatile gboolean shutdown;
 } GldAdc;
 
 GldAdc          *gld_adc_new (guint channel_count,

@@ -57,6 +57,7 @@ static uint8_t max1133_mux_channel_map[8] = {
     MAX1133_P0 | MAX1133_P1 | MAX1133_P2
 };
 
+static void*    daq_thread_main (void *daq_ptr);
 
 typedef struct _DataBuffer DataBuffer;
 
@@ -196,6 +197,7 @@ gld_adc_new (guint channel_count, size_t buffer_capacity)
 {
     GldAdc *daq;
     guint i;
+    int rc;
 
     /* we don't support more than 16 channels */
     g_return_val_if_fail (channel_count <= 16, NULL);
@@ -217,6 +219,15 @@ gld_adc_new (guint channel_count, size_t buffer_capacity)
     srand (time(NULL));
 #endif
 
+    /* create DAQ thread */
+    daq->shutdown = FALSE;
+    daq->running = FALSE;
+    rc = pthread_create (&daq->tid, NULL, &daq_thread_main, daq);
+    if (rc) {
+        g_error ("Return code from pthread_create() is %d\n", rc);
+        return FALSE;
+    }
+
 	return daq;
 }
 
@@ -228,6 +239,10 @@ gld_adc_free (GldAdc *daq)
 {
     guint i;
     g_return_if_fail (daq != NULL);
+
+    /* make DAQ thread terminate */
+    daq->running  = FALSE;
+    daq->shutdown = TRUE;
 
     /* dispose of buffers */
     for (i = 0; i < daq->channel_count; i++)
@@ -314,7 +329,15 @@ daq_thread_main (void *daq_ptr)
     size_t sample_count = 0;
 
     max_delay_time = gld_set_timespec_from_ms (1000 / daq->acq_frequency);
-    while (daq->running) {
+    while (TRUE) {
+        if (!daq->running) {
+            /* we are not acquiring data - check if we should terminate */
+            if (daq->shutdown)
+                break;
+            sample_count = 0;
+            continue;
+        }
+
         if (clock_gettime (CLOCK_REALTIME, &start) == -1 ) {
             g_critical ("Unable to get realtime DAQ start time.");
             continue;
@@ -360,7 +383,6 @@ daq_thread_main (void *daq_ptr)
 gboolean
 gld_adc_acquire_data (GldAdc *daq, size_t sample_count)
 {
-    int rc;
     g_assert (!daq->running);
 
     /* start with a fresh buffer, never append data */
@@ -368,12 +390,6 @@ gld_adc_acquire_data (GldAdc *daq, size_t sample_count)
 
     daq->sample_max_count = sample_count;
     daq->running = TRUE;
-    rc = pthread_create (&daq->tid, NULL, &daq_thread_main, daq);
-    if (rc) {
-        daq->running = FALSE;
-        g_error ("Return code from pthread_create() is %d\n", rc);
-        return FALSE;
-    }
 
     return TRUE;
 }

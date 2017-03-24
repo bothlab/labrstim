@@ -604,7 +604,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
                 fftw_inter_swr.signal_data[i] = data_from_file[i];
                 fftw_inter_swr.ref_signal_data[i] = ref_from_file[i];
             }
-        }
+        } /* end dat file */
 
         if (last_sample_no >= fftw_inter_swr.real_data_to_fft_size) {
             // do differential, filtering, and convolution

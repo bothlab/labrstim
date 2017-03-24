@@ -188,9 +188,9 @@ labrstim_get_stim_parameters (char **argv, int argc, double *trial_duration_sec,
     }
 
     /* parse the arguments from the command line */
-    trial_dur_s  = atof (argv[2]);
-    pulse_dur_ms = atof (argv[3]);
-    laser_int_v  = atof (argv[4]);
+    trial_dur_s  = g_strtod (argv[2], NULL);
+    pulse_dur_ms = g_strtod (argv[3], NULL);
+    laser_int_v  = g_strtod (argv[4], NULL);
 
     if (trial_dur_s <= 0 || trial_dur_s > 10000) {
         g_printerr ("Trial duration should be between 0 and 10000 sec\nYou gave %lf\n",
@@ -369,7 +369,7 @@ labrstim_run_swr (const gchar *command, char **argv, int argc)
     if (ret != 0)
         return ret;
     if (!labrstim_get_stim_parameters (argv, argc, &trial_duration_sec, &pulse_duration_ms, &laser_intensity_volt))
-        return 1;
+        return 3;
 
     /* check if parameters make sense */
     if (opt_swr_power_threshold < 0 || opt_swr_power_threshold > 20) {
