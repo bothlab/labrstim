@@ -202,6 +202,7 @@ data_file_si_get_data_one_channel (data_file_si * df, int channel_no,
                  "data_file_si_get_data_one_channel(): end_index > num_samples\n");
         return 1;
     }
+
     int num_samples_to_read = end_index - start_index;
     int num_complete_blocks_to_read =
         num_samples_to_read / df->num_samples_in_complete_block;
@@ -375,6 +376,7 @@ data_file_si_cut_data_file (data_file_si * df, char *new_file_name,
         num_samples_to_read % df->num_samples_in_complete_block;
     int i;
     int start_index_bytes;
+
     if (num_samples_incomplete_block > 0)
         num_blocks_to_read = num_complete_blocks_to_read + 1;
     else

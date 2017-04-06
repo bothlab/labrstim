@@ -331,8 +331,7 @@ make_butterworth_filter (int sampling_rate,     // max freq is sr/2
     int n_high;                   // order of filter
     double *function_low_pass;
     double *function_high_pass;
-    double frequency_steps =
-        (double) sampling_rate / 2 / (double) filter_length;
+    double frequency_steps = (double) sampling_rate / 2 / (double) filter_length;
     double frequency;
     int i = 0;
 

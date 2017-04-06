@@ -22,10 +22,10 @@
 
 #include "galdur.h"
 
-static gulong opt_sample_count      = 1000 * 124;
-static guint  opt_channel_count     = 16;
+static gint64 opt_sample_count      = 1000 * 124;
+static gint   opt_channel_count     = 16;
 
-static gulong opt_sample_frequency  = 6000; /* 6 kHz */
+static gint64 opt_sample_frequency  = 6000; /* 6 kHz */
 
 static gchar  *opt_base_filename = NULL;
 
@@ -37,7 +37,7 @@ run_galdur_adc_daq ()
     GldAdc *daq;
     guint i;
 
-    g_print ("Reading %lu samples from %u channels at %luHz.\n",
+    g_print ("Reading %"G_GINT64_FORMAT" samples from %i channels at %"G_GINT64_FORMAT"Hz.\n",
             opt_sample_count, opt_channel_count, opt_sample_frequency);
 
     daq = gld_adc_new (opt_channel_count, opt_sample_count);
@@ -112,6 +112,19 @@ int main(int argc, char **argv)
         g_print ("No base filename given, storing data in '/tmp/galdur-adc-<chan>.csv'.\n");
         g_print ("\n");
         opt_base_filename = g_strdup ("/tmp/galdur-adc-");
+    }
+
+    if (opt_channel_count < 0) {
+        g_error ("A negative channel count is not allowed.");
+        return 2;
+    }
+    if (opt_sample_count < 0) {
+        g_error ("A negative amount of samples is not only fairly useless but also impossible.");
+        return 2;
+    }
+    if (opt_sample_frequency < 0) {
+        g_error ("A negative sampling frequency is an interesting idea, but not something that makes much sense and that we can do.");
+        return 2;
     }
 
     if (!gld_board_initialize ())

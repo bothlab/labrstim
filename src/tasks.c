@@ -595,8 +595,8 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
                              last_sample_no + new_samples_per_read_operation - 1);
                     goto out;
                 }
-                last_sample_no =
-                    last_sample_no + new_samples_per_read_operation - 1;
+
+                last_sample_no = last_sample_no + new_samples_per_read_operation - 1;
             }
 
             // copy the short int array to double array
@@ -675,6 +675,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
                     //printf("%ld %lf %lf %lf %ld\n",last_sample_no,swr_power,fftw_inter_swr.mean_power,fftw_inter_swr.std_power,fftw_inter_swr.number_segments_analysed);
                     // print the res value of the stimulation time
                     g_print ("%zu\n", last_sample_no);
+
                     // move forward in file by the duration of the pulse
                     last_sample_no = last_sample_no + (tk.pulse_duration_ms * LS_DEFAULT_SAMPLING_RATE / 1000);
                 }

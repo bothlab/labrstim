@@ -25,7 +25,7 @@
 #define LS_DATA_BUFFER_SIZE 1024 * 1024 * 64
 
 /* ADC sampling speed per channel */
-#define LS_DEFAULT_SAMPLING_RATE 20048
+#define LS_DEFAULT_SAMPLING_RATE 20000 /* 20kHz */
 
 /* channel defaults */
 #define LS_ADC_CHANNEL_COUNT 2

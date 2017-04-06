@@ -23,7 +23,7 @@
 
 #include "galdur.h"
 
-static guint opt_delay  = 500;
+static gint opt_delay  = 500;
 
 
 static volatile gboolean blink_running = TRUE;
@@ -38,6 +38,12 @@ void
 run_status_led_blink ()
 {
     uint8_t status_val = GLD_GPIO_LOW;
+
+    if (opt_delay < 0) {
+        g_error ("A negative delay makes no sense, we can not travel in time yet.");
+        return;
+    }
+
     while (blink_running) {
         status_val = ~status_val;
         gld_status_led_set (status_val);
