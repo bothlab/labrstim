@@ -518,6 +518,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
                     if (gld_adc_get_data (daq, LS_SCAN_CHAN, &data)) {
                         fftw_inter_swr.signal_data[data_slice_pos] = data;
                         data_slice_pos++;
+                        last_sample_no++;
                         data_acquired = TRUE;
                     }
                 } else {
@@ -635,7 +636,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
                             fftw_inter_swr.convoluted_signal[i]);
                 }
                 fprintf (stderr,
-                         "check no: %ld, last_sample_no: %ld  sleep time: %.2lf (us), processing time: %.2lf, diff_between_two_get_data: %.2lf power: %.2lf threshold: %.2lf convolution_peak: %.2lf\n",
+                         "ps check no: %ld, last_sample_no: %ld  sleep time: %.2lf (us), processing time: %.2lf, diff_between_two_get_data: %.2lf power: %.2lf threshold: %.2lf convolution_peak: %.2lf\n",
                          counter++, last_sample_no,
                          tk.duration_sleep_between_swr_processing.tv_nsec /
                          1000.0,
@@ -694,7 +695,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
             gld_time_diff (&tk.time_previous_new_data, &tk.time_last_acquired_data);
         tk.time_previous_new_data = tk.time_last_acquired_data;
         fprintf (stderr,
-                 "1check no: %ld, last_sample_no: %ld  sleep time: %.2lf (us), processing time: %.2lf, diff_between_two_get_data: %.2lf power: %.2lf threshold: %.2lf convolution_peak: %.2lf\n",
+                 "ns check no: %ld, last_sample_no: %ld  sleep time: %.2lf (us), processing time: %.2lf, diff_between_two_get_data: %.2lf power: %.2lf threshold: %.2lf convolution_peak: %.2lf\n",
                  counter++, last_sample_no,
                  tk.duration_sleep_between_swr_processing.tv_nsec / 1000.0,
                  tk.elapsed_from_acquisition.tv_nsec / 1000.0,
