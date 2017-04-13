@@ -165,8 +165,8 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
     /* structure with variables to do the filtering of signal */
     struct fftw_interface_theta fftw_inter;
 
-    /* configure ADC */
-    daq = gld_adc_new (LS_ADC_CHANNEL_COUNT, LS_DATA_BUFFER_SIZE);
+    /* configure ADC, run DAQ on CPU 0 */
+    daq = gld_adc_new (LS_ADC_CHANNEL_COUNT, LS_DATA_BUFFER_SIZE, 0);
     gld_adc_set_acq_frequency (daq, LS_DEFAULT_SAMPLING_RATE);
 
     if (fftw_interface_theta_init (&fftw_inter) == -1) {
@@ -436,8 +436,8 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
     tk.interval_duration_between_swr_processing =
         gld_set_timespec_from_ms (INTERVAL_DURATION_BETWEEN_SWR_PROCESSING_MS);
 
-    /* create ADC interface and configure it */
-    daq = gld_adc_new (LS_ADC_CHANNEL_COUNT, LS_DATA_BUFFER_SIZE);
+    /* create ADC interface and configure it, run DAQ on CPU 0 */
+    daq = gld_adc_new (LS_ADC_CHANNEL_COUNT, LS_DATA_BUFFER_SIZE, 0);
     gld_adc_set_acq_frequency (daq, LS_DEFAULT_SAMPLING_RATE);
 
     /* initialize fftw interface */

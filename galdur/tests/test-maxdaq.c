@@ -20,7 +20,7 @@ test_daq_speed ()
     g_print ("Reading %lu samples from %u channels at %luHz.\n",
             SAMPLE_COUNT, CHANNEL_COUNT, SAMPLE_FREQUENCY);
 
-    daq = gld_adc_new (CHANNEL_COUNT, SAMPLE_COUNT);
+    daq = gld_adc_new (CHANNEL_COUNT, SAMPLE_COUNT, -1);
 
     gld_adc_set_acq_frequency (daq, SAMPLE_FREQUENCY);
 
@@ -73,7 +73,7 @@ test_daq_ringbuf ()
     g_print ("Reading %lu samples from %u channels at %luHz (ringbuffer test).\n",
             SAMPLE_COUNT, CHANNEL_COUNT, SAMPLE_FREQUENCY);
 
-    daq = gld_adc_new (CHANNEL_COUNT, SAMPLE_COUNT / 4);
+    daq = gld_adc_new (CHANNEL_COUNT, SAMPLE_COUNT / 4, -1);
 
     gld_adc_set_acq_frequency (daq, SAMPLE_FREQUENCY);
 

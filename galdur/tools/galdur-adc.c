@@ -40,7 +40,7 @@ run_galdur_adc_daq ()
     g_print ("Reading %"G_GINT64_FORMAT" samples from %i channels at %"G_GINT64_FORMAT"Hz.\n",
             opt_sample_count, opt_channel_count, opt_sample_frequency);
 
-    daq = gld_adc_new (opt_channel_count, opt_sample_count);
+    daq = gld_adc_new (opt_channel_count, opt_sample_count, -1);
 
     gld_adc_set_acq_frequency (daq, opt_sample_frequency);
 

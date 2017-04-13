@@ -446,6 +446,7 @@ labrstim_init_random_seed (void)
 static gboolean
 labrstim_make_realtime (void)
 {
+    /* set scheduler policy */
     struct sched_param param;
     param.sched_priority = MY_PRIORITY;
     if (sched_setscheduler (0, SCHED_FIFO, &param) == -1) {
@@ -454,6 +455,13 @@ labrstim_make_realtime (void)
                  "Do you have permission to run real-time applications? You might need to be root or use sudo\n");
         return FALSE;
     }
+
+    /* ensure the main thread does never run on the DAQ core */
+    if (gld_set_thread_no_cpu_affinity (0) < 0) {
+        g_printerr ("Unable to set CPU core affinity.");
+        return FALSE;
+    }
+
     /* lock memory */
     if (mlockall (MCL_CURRENT | MCL_FUTURE) == -1) {
         fprintf (stderr, "%s: mlockall failed", APP_NAME);

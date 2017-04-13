@@ -19,6 +19,11 @@
 
 #include "gld-utils.h"
 
+#include <unistd.h>
+#include <sched.h>
+#include <errno.h>
+#include <pthread.h>
+
 /**
  * gld_set_timespec_from_ms:
  */
@@ -65,4 +70,53 @@ gld_microsecond_from_timespec (struct timespec* duration)
 
     //  ms=ms+duration.tv_sec*1000;
     return ms;
+}
+
+/**
+ * gld_set_thread_cpu_affinity:
+ *
+ * Make thread run preferrably on the selected CPU/core.
+ */
+int
+gld_set_thread_cpu_affinity (int cpu_id)
+{
+    int cpus_n = sysconf (_SC_NPROCESSORS_ONLN);
+    if (cpu_id < 0 || cpu_id >= cpus_n)
+        return -EINVAL;
+
+    cpu_set_t cpuset;
+    CPU_ZERO (&cpuset);
+    CPU_SET (cpu_id, &cpuset);
+
+    pthread_t current_thread = pthread_self ();
+    return pthread_setaffinity_np (current_thread,
+                                   sizeof(cpu_set_t),
+                                   &cpuset);
+}
+
+/**
+ * gld_set_thread_no_cpu_affinity:
+ *
+ * Make thread run on all but the selected CPU/core.
+ */
+int
+gld_set_thread_no_cpu_affinity (int cpu_id)
+{
+    int i;
+    int cpus_n = sysconf (_SC_NPROCESSORS_ONLN);
+    if (cpu_id < 0 || cpu_id >= cpus_n)
+        return -EINVAL;
+
+    cpu_set_t cpuset;
+    CPU_ZERO (&cpuset);
+    for (i = 0; i < cpus_n; i++) {
+        if (i == cpu_id)
+            continue;
+        CPU_SET (i, &cpuset);
+    }
+
+    pthread_t current_thread = pthread_self ();
+    return pthread_setaffinity_np (current_thread,
+                                   sizeof(cpu_set_t),
+                                   &cpuset);
 }

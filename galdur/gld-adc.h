@@ -32,12 +32,14 @@ typedef struct
     guint acq_frequency;
     size_t sample_max_count;
 
+    int cpu_affinity;
     volatile gboolean running;
     volatile gboolean shutdown;
 } GldAdc;
 
 GldAdc          *gld_adc_new (guint channel_count,
-                                 size_t buffer_capacity);
+                              size_t buffer_capacity,
+                              int cpu_affinity);
 void            gld_adc_free (GldAdc *daq);
 
 void            gld_adc_set_acq_frequency (GldAdc *daq,

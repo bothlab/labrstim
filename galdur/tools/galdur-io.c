@@ -53,7 +53,7 @@ run_io_passthrough ()
     gld_board_set_aux_spi_clock_divider (2);
 
     /* new ADC interface with default buffer size */
-    adc = gld_adc_new (opt_channel_count, 0);
+    adc = gld_adc_new (opt_channel_count, 0, -1);
     while (g_running) {
         int16_t invalue;
         guint i;

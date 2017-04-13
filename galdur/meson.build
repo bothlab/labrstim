@@ -42,6 +42,8 @@ configure_file(input: '../config.h.in',
                configuration: conf
 )
 
+add_global_arguments(['-D_GNU_SOURCE'], language: 'c')
+
 #
 # Targets
 #

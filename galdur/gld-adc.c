@@ -193,7 +193,7 @@ data_buffer_pull_data (DataBuffer *dbuf, int16_t *data)
  * gld_adc_new:
  */
 GldAdc*
-gld_adc_new (guint channel_count, size_t buffer_capacity)
+gld_adc_new (guint channel_count, size_t buffer_capacity, int cpu_affinity)
 {
     GldAdc *daq;
     guint i;
@@ -218,6 +218,8 @@ gld_adc_new (guint channel_count, size_t buffer_capacity)
 #ifdef SIMULATE_DATA
     srand (time(NULL));
 #endif
+
+    daq->cpu_affinity = cpu_affinity;
 
     /* create DAQ thread */
     daq->shutdown = FALSE;
@@ -327,6 +329,13 @@ daq_thread_main (void *daq_ptr)
     struct timespec max_delay_time;
 
     size_t sample_count = 0;
+
+    /* make the DAQ thread use the selected core */
+    if (daq->cpu_affinity >= 0) {
+        if (gld_set_thread_cpu_affinity (0) < 0) {
+            g_critical ("Unable to set CPU core affinity for DAQ thread.");
+        }
+    }
 
     max_delay_time = gld_set_timespec_from_ms (1000 / daq->acq_frequency);
     while (TRUE) {
