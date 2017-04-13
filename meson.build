@@ -30,7 +30,7 @@ labrstim_src = [
 #
 # Dependencies
 #
-fftw3_dep  = dependency('fftw3')
+fftw3_dep  = dependency('fftw3f') # single-precision fftw
 thread_dep = dependency('threads')
 glib_dep = dependency('glib-2.0')
 math_lib = compiler.find_library('m')
