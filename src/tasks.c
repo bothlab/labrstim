@@ -670,6 +670,13 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
                     /* get the time of last stimulation */
                     clock_gettime (CLOCK_REALTIME,
                                    &tk.time_last_stimulation);
+
+                    /* sleep so that the interval between two calculation of power is approximately tk.interval_duration_between_swr_processing */
+                    clock_gettime (CLOCK_REALTIME, &tk.time_now);
+                    tk.elapsed_from_acquisition = gld_time_diff (&tk.time_last_acquired_data, &tk.time_now);
+                    tk.duration_sleep_between_swr_processing = gld_time_diff (&tk.elapsed_from_acquisition, &tk.interval_duration_between_swr_processing);
+                    nanosleep (&tk.duration_sleep_between_swr_processing, &tk.req);
+                    tk.elapsed_beginning_trial = gld_time_diff (&tk.time_beginning_trial, &tk.time_now);
                 } else {
                     /* working with data file */
 
@@ -682,13 +689,6 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
                 }
             }
         }
-
-        /* sleep so that the interval between two calculation of power is approximately tk.interval_duration_between_swr_processing */
-        clock_gettime (CLOCK_REALTIME, &tk.time_now);
-        tk.elapsed_from_acquisition = gld_time_diff (&tk.time_last_acquired_data, &tk.time_now);
-        tk.duration_sleep_between_swr_processing = gld_time_diff (&tk.elapsed_from_acquisition, &tk.interval_duration_between_swr_processing);
-        nanosleep (&tk.duration_sleep_between_swr_processing, &tk.req);
-        tk.elapsed_beginning_trial = gld_time_diff (&tk.time_beginning_trial, &tk.time_now);
 
 #ifdef DEBUG
         tk.duration_previous_current_new_data =
