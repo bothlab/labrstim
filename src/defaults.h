@@ -43,7 +43,6 @@
 #define MIN_FREQUENCY_DELTA 2
 #define MAX_FREQUENCY_DELTA 4
 #define MAX_PHASE_DIFFERENCE 10
-#define SLEEP_WHEN_NO_NEW_DATA_MS 0.2
 
 /* defaults for SWR detection */
 #define FFT_SIGNAL_DATA_SIZE_SWR 1024 // number of data points that goes into the fft, needs to be a 2^x number

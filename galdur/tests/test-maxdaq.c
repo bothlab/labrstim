@@ -26,7 +26,7 @@ test_daq_speed ()
 
     clock_gettime(CLOCK_REALTIME, &start);
 
-    gld_adc_acquire_data (daq, SAMPLE_COUNT);
+    gld_adc_acquire_samples (daq, SAMPLE_COUNT);
 
     while (gld_adc_is_running (daq)) {}
 
@@ -49,7 +49,7 @@ test_daq_speed ()
             break;
         }
 
-        while (gld_adc_get_data (daq, i, &data))
+        while (gld_adc_get_sample (daq, i, &data))
             fprintf (f, "%i\n", data);
         fclose (f);
     }
@@ -77,7 +77,7 @@ test_daq_ringbuf ()
 
     gld_adc_set_acq_frequency (daq, SAMPLE_FREQUENCY);
 
-    gld_adc_acquire_data (daq, SAMPLE_COUNT);
+    gld_adc_acquire_samples (daq, SAMPLE_COUNT);
 
     FILE *f = fopen (fname, "w");
     if (f == NULL) {
@@ -90,7 +90,7 @@ test_daq_ringbuf ()
         for (i = 0; i < CHANNEL_COUNT; i++) {
             int16_t data;
 
-            if (gld_adc_get_data (daq, i, &data)) {
+            if (gld_adc_get_sample (daq, i, &data)) {
                 data_available = TRUE;
                 fprintf(f, "%i;", data);
             }

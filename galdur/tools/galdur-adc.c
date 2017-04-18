@@ -46,7 +46,7 @@ run_galdur_adc_daq ()
 
     clock_gettime(CLOCK_REALTIME, &start);
 
-    gld_adc_acquire_data (daq, opt_sample_count);
+    gld_adc_acquire_samples (daq, opt_sample_count);
 
     while (gld_adc_is_running (daq)) {}
 
@@ -69,7 +69,7 @@ run_galdur_adc_daq ()
             break;
         }
 
-        while (gld_adc_get_data (daq, i, &data))
+        while (gld_adc_get_sample (daq, i, &data))
             fprintf (f, "%i\n", data);
         fclose (f);
     }

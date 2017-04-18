@@ -45,8 +45,6 @@ perform_train_stimulation (gboolean random, double trial_duration_sec, double pu
     tk.trial_duration_sec = trial_duration_sec;
     tk.pulse_duration_ms = pulse_duration_ms;
 
-    tk.duration_sleep_when_no_new_data =
-        gld_set_timespec_from_ms (SLEEP_WHEN_NO_NEW_DATA_MS);
     tk.duration_pulse = gld_set_timespec_from_ms (tk.pulse_duration_ms);
     tk.interval_duration_between_swr_processing =
         gld_set_timespec_from_ms (INTERVAL_DURATION_BETWEEN_SWR_PROCESSING_MS);
@@ -156,8 +154,6 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
     tk.trial_duration_sec = trial_duration_sec;
     tk.pulse_duration_ms = pulse_duration_ms;
 
-    tk.duration_sleep_when_no_new_data =
-        gld_set_timespec_from_ms (SLEEP_WHEN_NO_NEW_DATA_MS);
     tk.duration_pulse = gld_set_timespec_from_ms (tk.pulse_duration_ms);
     tk.interval_duration_between_swr_processing =
         gld_set_timespec_from_ms (INTERVAL_DURATION_BETWEEN_SWR_PROCESSING_MS);
@@ -168,6 +164,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
     /* configure ADC, run DAQ on CPU 0 */
     daq = gld_adc_new (LS_ADC_CHANNEL_COUNT, LS_DATA_BUFFER_SIZE, 0);
     gld_adc_set_acq_frequency (daq, LS_DEFAULT_SAMPLING_RATE);
+    gld_adc_set_nodata_sleep_time (daq, gld_set_timespec_from_ms (SLEEP_WHEN_NO_NEW_DATA_MS));
 
     if (fftw_interface_theta_init (&fftw_inter) == -1) {
         fprintf (stderr, "Could not initialize fftw_interface_theta\n");
@@ -212,37 +209,30 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
 
     ls_debug ("Start trial loop\n");
 
-    /* loop until the trial is over */
-    while (tk.elapsed_beginning_trial.tv_sec < tk.trial_duration_sec) {
-        size_t data_slice_pos = 0;
-
+    if (offline_data_file == NULL) {
         /* acquire data */
-        if (!gld_adc_acquire_data (daq, fftw_inter.real_data_to_fft_size)) {
+        if (!gld_adc_acquire_samples (daq, -1)) {
             fprintf (stderr,
                      "Unable to acquire samples, swr stimulation not possible\n");
             goto out;
         }
+    }
+
+    /* loop until the trial is over */
+    while (tk.elapsed_beginning_trial.tv_sec < tk.trial_duration_sec) {
+
+        /* jump to front and start sampling new data */
+        gld_adc_skip_to_front (daq, LS_SCAN_CHAN);
 
         if (offline_data_file == NULL) {
-            /* if no new data is available or not enough data to do a fftw */
-            while (data_slice_pos < fftw_inter.real_data_to_fft_size) {
-                int16_t data;
-
-                /* get data from MAX1133 ADC chip */
-                if (gld_adc_get_data (daq, LS_SCAN_CHAN, &data)) {
-                    fftw_inter.signal_data[data_slice_pos] = data;
-                    data_slice_pos++;
-                } else {
-                    /* sleep a bit and check for new data */
-                    nanosleep (&tk.duration_sleep_when_no_new_data, &tk.req);
-                }
-            }
+            /* get fixed size of samples from the data buffer */
+            gld_adc_get_samples_float (daq,
+                                       LS_SCAN_CHAN,
+                                       fftw_inter.signal_data,
+                                       fftw_inter.real_data_to_fft_size);
 
             /* set time when the last sample was acquired */
             clock_gettime(CLOCK_REALTIME, &tk.time_last_acquired_data);
-
-            data_slice_pos = 0;
-
         } else {
             guint i;
 
@@ -272,7 +262,7 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
                 last_sample_no =
                     last_sample_no + new_samples_per_read_operation;
             }
-            // copy the short int array to double array
+            // copy the short int array to float array
             for (i = 0; i < fftw_inter.real_data_to_fft_size; i++) {
                 fftw_inter.signal_data[i] = data_from_file[i];
             }
@@ -420,18 +410,13 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
     short int *ref_from_file = NULL;
     size_t last_sample_no = 0;
 
-    guint i;
-
     /* fftw SWR filtering structure */
     struct fftw_interface_swr fftw_inter_swr;
-
 
     /* set up timekeeper */
     tk.trial_duration_sec = trial_duration_sec;
     tk.pulse_duration_ms = pulse_duration_ms;
 
-    tk.duration_sleep_when_no_new_data =
-        gld_set_timespec_from_ms (SLEEP_WHEN_NO_NEW_DATA_MS);
     tk.duration_pulse = gld_set_timespec_from_ms (tk.pulse_duration_ms);
     tk.interval_duration_between_swr_processing =
         gld_set_timespec_from_ms (INTERVAL_DURATION_BETWEEN_SWR_PROCESSING_MS);
@@ -439,6 +424,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
     /* create ADC interface and configure it, run DAQ on CPU 0 */
     daq = gld_adc_new (LS_ADC_CHANNEL_COUNT, LS_DATA_BUFFER_SIZE, 0);
     gld_adc_set_acq_frequency (daq, LS_DEFAULT_SAMPLING_RATE);
+    gld_adc_set_nodata_sleep_time (daq, gld_set_timespec_from_ms (SLEEP_WHEN_NO_NEW_DATA_MS));
 
     /* initialize fftw interface */
     if (fftw_interface_swr_init (&fftw_inter_swr) == -1) {
@@ -489,66 +475,46 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
     // to check the intervals before getting new data.
     ls_debug ("Starting trial loop for swr\n");
 
+    if (offline_data_file == NULL) {
+            /* acquire data continuously */
+            if (!gld_adc_acquire_samples (daq, -1)) {
+                fprintf (stderr,
+                         "Unable to acquire samples, swr stimulation not possible\n");
+                goto out;
+            }
+    }
+
     /* loop while the trial is running */
     while (tk.elapsed_beginning_trial.tv_sec < tk.trial_duration_sec) {
-        size_t data_slice_pos = 0;
-        size_t data_ref_slice_pos = 0;
-        gboolean acquire_data = TRUE;
-
         double swr_power = 0;
         double swr_convolution_peak = 0;
 
         if (offline_data_file == NULL) {
             /* get data from our ADC chip */
 
-            /* acquire data */
-            if (!gld_adc_acquire_data (daq, fftw_inter_swr.real_data_to_fft_size * 2)) {
-                fprintf (stderr,
-                         "Unable to acquire samples, swr stimulation not possible\n");
-                goto out;
-            }
+            /* skip to buffer front, ignoring previous recordings */
+            gld_adc_skip_to_front (daq, LS_SCAN_CHAN);
+            gld_adc_skip_to_front (daq, LS_REF_CHAN);
 
-            while (acquire_data) {
-                int16_t data;
-                int16_t data_ref;
-                gboolean data_acquired = FALSE;
+            /* get data from ADC chip, data channel */
+            gld_adc_get_samples_float (daq,
+                                       LS_SCAN_CHAN,
+                                       fftw_inter_swr.signal_data,
+                                       fftw_inter_swr.real_data_to_fft_size);
 
-                /* get data from ADC chip, data channel */
-                if (data_slice_pos < fftw_inter_swr.real_data_to_fft_size) {
-                    if (gld_adc_get_data (daq, LS_SCAN_CHAN, &data)) {
-                        fftw_inter_swr.signal_data[data_slice_pos] = data;
-                        data_slice_pos++;
-                        last_sample_no++;
-                        data_acquired = TRUE;
-                    }
-                } else {
-                    acquire_data = FALSE;
-                }
+            last_sample_no += fftw_inter_swr.real_data_to_fft_size;
 
-                /* get data from ADC chip, reference channel */
-                if (data_ref_slice_pos < fftw_inter_swr.real_data_to_fft_size) {
-                    if (gld_adc_get_data (daq, LS_REF_CHAN, &data_ref)) {
-                        fftw_inter_swr.ref_signal_data[data_ref_slice_pos] = data_ref;
-                        data_ref_slice_pos++;
-                        data_acquired = TRUE;
-                    }
-                    acquire_data = TRUE;
-                } else {
-                    acquire_data = FALSE;
-                }
+            /* get data from ADC chip, reference channel */
+            gld_adc_get_samples_float (daq,
+                                       LS_REF_CHAN,
+                                       fftw_inter_swr.ref_signal_data,
+                                       fftw_inter_swr.real_data_to_fft_size);
 
-                if (data_acquired) {
-                    /* sleep a bit, then check for new data */
-                    nanosleep (&tk.duration_sleep_when_no_new_data, &tk.req);
-                }
+            /* set time when the last sample was acquired */
+            clock_gettime(CLOCK_REALTIME, &tk.time_last_acquired_data);
 
-                /* set time when the last sample was acquired */
-                clock_gettime(CLOCK_REALTIME, &tk.time_last_acquired_data);
-            }
-
-            data_slice_pos = 0;
-            data_ref_slice_pos = 0;
         } else {
+            guint i;
             /* get data from a dat file */
 
             if (last_sample_no == 0) {
@@ -629,6 +595,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
                  tk.duration_refractory_period.tv_sec)) {
 
 #ifdef DEBUG
+                guint i;
                 printf ("%ld\n", last_sample_no);
                 for (i = 0; i < fftw_inter_swr.real_data_to_fft_size; i++) {
                     g_print ("%lf %lf %lf\n", fftw_inter_swr.signal_data[i],

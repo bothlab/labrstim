@@ -62,7 +62,7 @@ run_io_passthrough ()
         gld_adc_acquire_single_dataset (adc);
 
         for (i = 0; i < opt_channel_count; i++) {
-            if (gld_adc_get_data (adc, i, &invalue)) {
+            if (gld_adc_get_sample (adc, i, &invalue)) {
                 /* shift bipolar value up, so we get a positive int covering the full range */
                 uint16_t outvalue = invalue + (INT16_MIN * -1);
 

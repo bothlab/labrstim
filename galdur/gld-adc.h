@@ -30,9 +30,10 @@ typedef struct
     pthread_t   tid;
 
     guint acq_frequency;
-    size_t sample_max_count;
+    ssize_t sample_max_count;
 
     int cpu_affinity;
+    struct timespec nodata_sleep_time;
     volatile gboolean running;
     volatile gboolean shutdown;
 } GldAdc;
@@ -44,16 +45,35 @@ void            gld_adc_free (GldAdc *daq);
 
 void            gld_adc_set_acq_frequency (GldAdc *daq,
                                               guint hz);
+void            gld_adc_set_nodata_sleep_time (GldAdc *daq,
+                                               struct timespec time);
 
 void            gld_adc_acquire_single_dataset (GldAdc *daq);
-gboolean        gld_adc_acquire_data (GldAdc *daq,
-                                         size_t sample_count);
+gboolean        gld_adc_acquire_samples (GldAdc *daq,
+                                         ssize_t sample_count);
+
 gboolean        gld_adc_reset (GldAdc *daq);
 gboolean        gld_adc_is_running (GldAdc *daq);
 
-gboolean        gld_adc_get_data (GldAdc *daq,
+gboolean        gld_adc_get_sample (GldAdc *daq,
                                      guint channel,
                                      int16_t *data);
+
+void            gld_adc_get_samples (GldAdc *daq,
+                                     guint channel,
+                                     int *samples,
+                                     size_t samples_len);
+void            gld_adc_get_samples_double (GldAdc *daq,
+                                            guint channel,
+                                            double *samples,
+                                            size_t samples_len);
+void            gld_adc_get_samples_float (GldAdc *daq,
+                                           guint channel,
+                                           float *samples,
+                                           size_t samples_len);
+
+void            gld_adc_skip_to_front (GldAdc *daq,
+                                       guint channel);
 
 
 #endif /* __GLD_ADC_H */

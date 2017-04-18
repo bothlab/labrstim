@@ -59,7 +59,6 @@ typedef struct
     struct timespec elapsed_processing;
     struct timespec duration_pulse;
     struct timespec duration_refractory_period;
-    struct timespec duration_sleep_when_no_new_data;
     struct timespec duration_sleep_to_right_phase;
     struct timespec actual_pulse_duration; // the duration of the last pulse, including nanosleep jitter
     struct timespec time_previous_new_data; // next 3 used in theta stimultion, to check the time to get new data

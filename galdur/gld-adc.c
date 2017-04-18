@@ -168,7 +168,7 @@ data_buffer_push_data (DataBuffer *dbuf, const int16_t value)
 /**
  * data_buffer_pull_data:
  */
-static gboolean
+static inline gboolean
 data_buffer_pull_data (DataBuffer *dbuf, int16_t *data)
 {
     if (dbuf->rd_pos >= dbuf->capacity) {
@@ -221,6 +221,9 @@ gld_adc_new (guint channel_count, size_t buffer_capacity, int cpu_affinity)
 
     daq->cpu_affinity = cpu_affinity;
 
+    /* default duration we sleep when we could not fetch new data */
+    gld_adc_set_nodata_sleep_time (daq, gld_set_timespec_from_ms (0.2));
+
     /* create DAQ thread */
     daq->shutdown = FALSE;
     daq->running = FALSE;
@@ -261,6 +264,18 @@ void
 gld_adc_set_acq_frequency (GldAdc *daq, guint hz)
 {
     daq->acq_frequency = hz;
+}
+
+/**
+ * gld_adc_set_nodata_sleep_time:
+ *
+ * Set time we sleep when we want to acquire a sample of a specified
+ * length but do not acquire data quickly enough.
+ */
+void
+gld_adc_set_nodata_sleep_time (GldAdc *daq, struct timespec time)
+{
+    daq->nodata_sleep_time = time;
 }
 
 /**
@@ -329,6 +344,7 @@ daq_thread_main (void *daq_ptr)
     struct timespec max_delay_time;
 
     size_t sample_count = 0;
+    gboolean continuous_sampling;
 
     /* make the DAQ thread use the selected core */
     if (daq->cpu_affinity >= 0) {
@@ -338,12 +354,15 @@ daq_thread_main (void *daq_ptr)
     }
 
     max_delay_time = gld_set_timespec_from_ms (1000 / daq->acq_frequency);
+
+    continuous_sampling = daq->sample_max_count < 0;
     while (TRUE) {
         if (!daq->running) {
             /* we are not acquiring data - check if we should terminate */
             if (daq->shutdown)
                 break;
             sample_count = 0;
+            continuous_sampling = daq->sample_max_count < 0;
             continue;
         }
 
@@ -364,8 +383,10 @@ daq_thread_main (void *daq_ptr)
         daq_time.tv_sec = stop.tv_sec - start.tv_sec;
         daq_time.tv_nsec = stop.tv_nsec - start.tv_nsec;
 
-        sample_count++;
-        daq->running = daq->sample_max_count > sample_count;
+        if (!continuous_sampling) {
+            sample_count++;
+            daq->running = daq->sample_max_count > sample_count;
+        }
 
         if ((daq_time.tv_sec > max_delay_time.tv_sec) && (daq_time.tv_nsec > max_delay_time.tv_nsec)) {
             /* we took too long, get new sample immediately */
@@ -383,14 +404,14 @@ daq_thread_main (void *daq_ptr)
 }
 
 /**
- * gld_adc_acquire_data:
- * @sample_count: Number of samples to acquire
+ * gld_adc_acquire_samples:
+ * @sample_count: Number of samples to acquire, -1 for continuous sampling
  *
  * Acquire a fixed amount of samples. Data acquisition happens
  * in a background thread, the function will return immediately.
  */
 gboolean
-gld_adc_acquire_data (GldAdc *daq, size_t sample_count)
+gld_adc_acquire_samples (GldAdc *daq, ssize_t sample_count)
 {
     g_assert (!daq->running);
 
@@ -441,11 +462,100 @@ gld_adc_is_running (GldAdc *daq)
 }
 
 /**
- * gld_adc_get_data:
+ * gld_adc_get_sample:
+ *
+ * Get a single samle in @data from channel @channel
+ *
+ * Returns: %TRUE if we could successfully fetch data, %FALSE otherwise.
  */
 gboolean
-gld_adc_get_data (GldAdc *daq, guint channel, int16_t *data)
+gld_adc_get_sample (GldAdc *daq, guint channel, int16_t *data)
 {
     g_assert (channel < daq->channel_count);
     return data_buffer_pull_data (daq->buffer[channel], data);
+}
+
+
+/**
+ * gld_adc_get_samples:
+ *
+ * Get @samples_len samples in @samples for channel @channel
+ * This function will block until the requested number of samples has
+ * been added to the buffer.
+ */
+void
+gld_adc_get_samples (GldAdc *daq, guint channel, int *samples, size_t samples_len)
+{
+    size_t sample_no = 0;
+
+    while (sample_no < samples_len) {
+        int16_t data;
+        if (data_buffer_pull_data (daq->buffer[channel], &data)) {
+            samples[sample_no] = data;
+            sample_no++;
+        } else {
+            /* sleep a little, as we have no data in the buffer */
+            nanosleep (&daq->nodata_sleep_time, NULL);
+        }
+    }
+}
+
+/**
+ * gld_adc_get_samples_double:
+ *
+ * Same as %gld_adc_get_samples, but using an array of doubles.
+ */
+void
+gld_adc_get_samples_double (GldAdc *daq, guint channel, double *samples, size_t samples_len)
+{
+    size_t sample_no = 0;
+
+    while (sample_no < samples_len) {
+        int16_t data;
+        if (data_buffer_pull_data (daq->buffer[channel], &data)) {
+            samples[sample_no] = data;
+            sample_no++;
+        } else {
+            /* sleep a little, as we have no data in the buffer */
+            nanosleep (&daq->nodata_sleep_time, NULL);
+        }
+    }
+}
+
+/**
+ * gld_adc_get_samples_float:
+ *
+ * Same as %gld_adc_get_samples, but using an array of floats.
+ */
+void
+gld_adc_get_samples_float (GldAdc *daq, guint channel, float *samples, size_t samples_len)
+{
+    size_t sample_no = 0;
+
+    while (sample_no < samples_len) {
+        int16_t data;
+        if (data_buffer_pull_data (daq->buffer[channel], &data)) {
+            samples[sample_no] = data;
+            sample_no++;
+        } else {
+            /* sleep a little, as we have no data in the buffer */
+            nanosleep (&daq->nodata_sleep_time, NULL);
+        }
+    }
+}
+
+/**
+ * gld_adc_skip_to_front:
+ *
+ * Skip to the front of the selected buffer, ignoring all previously
+ * recorded data.
+ */
+void
+gld_adc_skip_to_front (GldAdc *daq, guint channel)
+{
+    static pthread_mutex_t mutex;
+
+    pthread_mutex_lock (&mutex);
+    data_buffer_reset (daq->buffer[channel]);
+    pthread_mutex_unlock (&mutex);
 }
