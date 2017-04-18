@@ -72,6 +72,9 @@ endif
 # Subdirs
 #
 subdir('galdur')
+if (get_option('guiclient'))
+    subdir('client')
+endif
 
 #
 # Targets
