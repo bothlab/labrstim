@@ -30,8 +30,14 @@ private slots:
 
     void handleError(QSerialPort::SerialPortError error);
 
+    void on_actionStop_triggered();
+
+    void on_actionRun_triggered();
+
 private:
     void setStatusMessage(const QString &msg);
+    void setRunning(bool running);
+    void setRunInfoVisible(bool shown);
 
     Ui::MainWindow *ui;
     QLabel *m_status;

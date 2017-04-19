@@ -6,7 +6,8 @@
 #include <QMessageBox>
 #include <QScrollBar>
 #include <QLabel>
-#include <QtSerialPort/QSerialPort>
+#include <QtSerialPort>
+#include <QSvgRenderer>
 
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -22,6 +23,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->actionQuit->setEnabled(true);
     ui->actionConfigure->setEnabled(true);
 
+    // be safe on what is selected
+    ui->stackedWidget->setCurrentIndex(0);
+    ui->stimTypeComboBox->setCurrentIndex(0);
+
     m_status = new QLabel;
     ui->statusBar->addWidget(m_status);
 
@@ -36,11 +41,18 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(m_serial, &QSerialPort::readyRead, this, &MainWindow::readData);
 
+    // we can't run until we connected the stimulator device
+    setRunning(false);
+    ui->actionRun->setEnabled(false);
+
     // collapse the log view
     QList<int> list;
     list.append(1);
     list.append(0);
     ui->splitter->setSizes(list);
+
+    // create our waiting animation
+    ui->runIndicatorWidget->load(QStringLiteral(":/graphics/running.svg"));
 }
 
 MainWindow::~MainWindow()
@@ -50,6 +62,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::openSerialPort()
 {
+    setRunInfoVisible(true);
     m_serial->setPortName(m_settingsDlg->portName());
     m_serial->setBaudRate(QSerialPort::Baud9600);
     m_serial->setDataBits(QSerialPort::Data8);
@@ -60,12 +73,14 @@ void MainWindow::openSerialPort()
         ui->actionDisconnect->setEnabled(true);
         ui->actionConfigure->setEnabled(false);
         setStatusMessage(QStringLiteral("Connected to %1").arg(m_serial->portName()));
+        ui->actionRun->setEnabled(true);
     } else {
         QMessageBox::critical(this, "Error", m_serial->errorString());
         setStatusMessage("Connection error");
+        ui->actionRun->setEnabled(false);
     }
 
-    m_serial->write("ls -l\n");
+    setRunInfoVisible(false);
 }
 
 void MainWindow::closeSerialPort()
@@ -100,7 +115,36 @@ void MainWindow::setStatusMessage(const QString &msg)
     m_status->setText(msg);
 }
 
+void MainWindow::setRunInfoVisible(bool shown)
+{
+    ui->runIndicatorWidget->setVisible(shown);
+    QApplication::processEvents();
+}
+
+void MainWindow::setRunning(bool running)
+{
+    ui->actionStop->setEnabled(running);
+    ui->actionRun->setEnabled(!running);
+
+    ui->stackedWidget->setEnabled(!running);
+    ui->generalWidget->setEnabled(!running);
+
+    setRunInfoVisible(running);
+}
+
 void MainWindow::about()
 {
     QMessageBox::about(this, "About LaBrStim Client", "This is just a dummy test tool for now.");
+}
+
+void MainWindow::on_actionRun_triggered()
+{
+    m_serial->write("\n");
+
+    setRunning(true);
+}
+
+void MainWindow::on_actionStop_triggered()
+{
+    setRunning(false);
 }

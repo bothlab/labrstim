@@ -3,7 +3,7 @@
 
 add_languages('cpp')
 qt5 = import('qt5')
-qt5_dep = dependency('qt5', modules : ['Gui', 'Widgets', 'SerialPort'])
+qt5_dep = dependency('qt5', modules : ['Gui', 'SerialPort', 'Svg'])
 
 
 client_src = [
@@ -22,8 +22,13 @@ client_ui = [
     'settingsdialog.ui'
 ]
 
+client_qrc = [
+    'res.qrc'
+]
+
 moc_files = qt5.preprocess(moc_headers: client_headers,
-                           ui_files: client_ui
+                           ui_files: client_ui,
+                           qresources: client_qrc
 )
 
 executable('labrstimclient',

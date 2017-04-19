@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/graphics">
+        <file>running.svg</file>
+    </qresource>
+</RCC>
