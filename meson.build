@@ -87,3 +87,8 @@ executable('labrstim',
                           math_lib,
                           galdur_dep]
 )
+
+executable('labrstim-ttyctl',
+           ['src/ttyctl.c'],
+           dependencies: [glib_dep]
+)

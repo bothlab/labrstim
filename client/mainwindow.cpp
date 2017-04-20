@@ -64,7 +64,7 @@ void MainWindow::openSerialPort()
 {
     setRunInfoVisible(true);
     m_serial->setPortName(m_settingsDlg->portName());
-    m_serial->setBaudRate(QSerialPort::Baud9600);
+    m_serial->setBaudRate(QSerialPort::Baud115200);
     m_serial->setDataBits(QSerialPort::Data8);
     m_serial->setStopBits(QSerialPort::OneStop);
 
@@ -79,6 +79,12 @@ void MainWindow::openSerialPort()
         setStatusMessage("Connection error");
         ui->actionRun->setEnabled(false);
     }
+
+    // init
+    m_serial->write("NOOP\n");
+
+    // request device software version
+    m_serial->write("VERSION\n");
 
     setRunInfoVisible(false);
 }
@@ -139,7 +145,7 @@ void MainWindow::about()
 
 void MainWindow::on_actionRun_triggered()
 {
-    m_serial->write("\n");
+    m_serial->write("VERSION\n");
 
     setRunning(true);
 }

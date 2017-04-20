@@ -72,4 +72,6 @@
 #define NSEC_PER_SEC    (1000000000) /* The number of nsecs per sec. */
 #define NANOSLEEP_OVERSHOOT 0.0080000
 
+#define PI_TTY_CTLPORT "/dev/ttyAMA0"
+
 #endif /* __LS_DEFAULTS_H */
