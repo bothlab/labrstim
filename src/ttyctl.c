@@ -27,8 +27,15 @@
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 #include "defaults.h"
+
+static GPid labrstim_proc_pid = 0;
+static int labrstim_stderr_fd = 0;
+
+/* fd of the tty we are connected to to communicate with the master */
+static int tty_fd = -1;
 
 /**
  * tty_set_interface_attribs:
@@ -97,17 +104,45 @@ tty_write (int fd, const gchar *str)
 }
 
 /**
- * tty_writeln:
+ * tty_writecmd:
  *
  * Write line to tty.
  */
 static gboolean
-tty_writeln (int fd, const gchar *str)
+tty_writecmd (int fd, const gchar *cmd, const gchar *val)
 {
     g_autofree gchar *strnl;
 
-    strnl = g_strdup_printf ("%s\n", str);
+    if (val == NULL)
+        strnl = g_strdup_printf ("%s\n", cmd);
+    else
+        strnl = g_strdup_printf ("%s %s\n", cmd, val);
     return tty_write (fd, strnl);
+}
+
+/**
+ * labrstim_command_exited:
+ *
+ * Triggered if the labrstim command is done.
+ */
+void
+labrstim_command_exited (GPid pid, gint status, gpointer user_data)
+{
+    g_autofree gchar *tmp = NULL;
+    tmp = g_strdup_printf ("%i", status);
+
+    if ((status == 0) || (status == 15)) {
+        /* we exited normally or received SIGTERM */
+        tty_writecmd (tty_fd, "FINISHED", tmp);
+    } else {
+        /* TODO: Send the stderr output over the wire */
+        tty_writecmd (tty_fd, "ERROR", "Labrstim exited with an error code.");
+    }
+
+    labrstim_proc_pid = 0;
+
+    /* noop on Linux */
+    g_spawn_close_pid (pid);
 }
 
 /**
@@ -116,22 +151,91 @@ tty_writeln (int fd, const gchar *str)
  * Process a command.
  */
 static void
-process_command (int fd, const gchar *cmd)
+run_labrstim_command (const gchar *lstim_cmd)
+{
+    gboolean ret;
+    g_autoptr(GError) error = NULL;
+    g_auto(GStrv) args = NULL;
+    g_autofree gchar *cmd_raw = NULL;
+
+    if (labrstim_proc_pid != 0) {
+        tty_writecmd (tty_fd, "ERROR", "Already running.");
+        return;
+    }
+
+    /* create the final command */
+    cmd_raw = g_strdup_printf ("labrstim %s", lstim_cmd);
+    args = g_strsplit (cmd_raw, " ", -1);
+
+    ret = g_spawn_async_with_pipes ("/tmp", /* working directory */
+                          args,
+                          NULL, /* envp */
+                          G_SPAWN_SEARCH_PATH | G_SPAWN_DO_NOT_REAP_CHILD,
+                          NULL, /* child setup */
+                          NULL,
+                          &labrstim_proc_pid,
+                          NULL, /* stdin */
+                          NULL, /* we ignore stdout for now */
+                          &labrstim_stderr_fd,
+                          &error);
+    if (!ret) {
+        g_autofree gchar *tmp = NULL;
+
+        tmp = g_strescape (error->message, NULL);
+        tty_writecmd (tty_fd, "ERROR", tmp);
+    } else {
+        g_child_watch_add (labrstim_proc_pid,
+                       labrstim_command_exited,
+                       NULL);
+    }
+
+    tty_writecmd (tty_fd, "OK", NULL);
+}
+
+/**
+ * stop_labrstim_command:
+ */
+static void
+stop_labrstim_command ()
+{
+     if (labrstim_proc_pid != 0) {
+         if (kill (labrstim_proc_pid, SIGTERM) != 0)
+             tty_writecmd (tty_fd, "ERROR", g_strerror (errno));
+         usleep (200);
+
+         /* test if the process is really dead, kill it if necessary */
+         if (kill (labrstim_proc_pid, 0) == 0) {
+             if (kill (labrstim_proc_pid, SIGKILL) != 0)
+                tty_writecmd (tty_fd, "ERROR", g_strerror (errno));
+        }
+    }
+
+    tty_writecmd (tty_fd, "OK", NULL);
+}
+/**
+ * process_command:
+ *
+ * Process a command.
+ */
+static void
+process_command (const gchar *cmd)
 {
     if (g_strcmp0 (cmd, "VERSION") == 0) {
-        tty_write (fd, "VERSION ");
-        tty_write (fd, PACKAGE_NAME);
-        tty_write (fd, " ");
-        tty_write (fd, PACKAGE_VERSION);
-        tty_write (fd, "\n");
+        tty_write (tty_fd, "VERSION ");
+        tty_write (tty_fd, PACKAGE_NAME);
+        tty_write (tty_fd, " ");
+        tty_write (tty_fd, PACKAGE_VERSION);
+        tty_write (tty_fd, "\n");
     } else if (g_str_has_prefix (cmd, "RUN ")) {
-        printf ("Yeah! Run!: %s\n", cmd);
+        run_labrstim_command (cmd + 4);
+    } else if (g_strcmp0 (cmd, "STOP") == 0) {
+        stop_labrstim_command (tty_fd);
     } else if (g_strcmp0 (cmd, "PING") == 0) {
-        tty_writeln (fd, "PONG");
+        tty_writecmd (tty_fd, "PONG", NULL);
     } else if (g_strcmp0 (cmd, "NOOP") == 0) {
         /* we never greet back */
     } else {
-        tty_writeln (fd, "UNKNOWN_CMD");
+        tty_writecmd (tty_fd, "UNKNOWN_CMD", NULL);
     }
 }
 
@@ -143,57 +247,54 @@ receive_data (GIOChannel *io, GIOCondition condition, gpointer data)
 {
     unsigned char buf[128];
     int rdlen;
+    guint i;
     GString *strbuf = (GString*) data;
     int fd = g_io_channel_unix_get_fd (io);
 
-    do {
-        guint i;
-        rdlen = read(fd, buf, sizeof(buf) - 1);
+    rdlen = read (fd, buf, sizeof(buf) - 1);
 
-        if (rdlen < 0) {
-            g_printerr ("Read Error: %d: %s\n", rdlen, g_strerror (errno));
-            tty_writeln (fd, "READ_ERROR");
-            break;
-        }
+    if (rdlen < 0) {
+        g_printerr ("Read Error: %d: %s\n", rdlen, g_strerror (errno));
+        tty_writecmd (fd, "READ_ERROR", NULL);
+        return TRUE;
+    }
 
-        for (i = 0; i < rdlen; i++) {
-            if (buf[i] == '\n') {
-                process_command (fd, strbuf->str);
-                g_string_truncate (strbuf, 0);
-            } else {
-                g_string_append_c (strbuf, buf[i]);
-            }
+    for (i = 0; i < rdlen; i++) {
+        if (buf[i] == '\n') {
+            process_command (strbuf->str);
+            g_string_truncate (strbuf, 0);
+        } else {
+            g_string_append_c (strbuf, buf[i]);
         }
-    } while (rdlen > 0);
+    }
 
     return TRUE;
 }
 
 int main()
 {
-    int fd;
     g_autoptr(GMainLoop) loop = NULL;
     g_autoptr(GString) strbuf = NULL;
     GIOChannel *iochan;
 
-    fd = open (PI_TTY_CTLPORT, O_RDWR | O_NOCTTY | O_SYNC);
-    if (fd < 0) {
+    tty_fd = open (PI_TTY_CTLPORT, O_RDWR | O_NOCTTY | O_SYNC);
+    if (tty_fd < 0) {
         g_printerr ("Unable to open tty at %s: %s\n", PI_TTY_CTLPORT, g_strerror (errno));
         return 2;
     }
 
     /* baudrate 115200, 8 bits, no parity, 1 stop bit */
-    tty_set_interface_attribs (fd, B115200);
+    tty_set_interface_attribs (tty_fd, B115200);
 
     /* new buffer string to store the data we receive */
     strbuf = g_string_sized_new (48);
 
     /* tell the world that we started up */
-    tty_writeln (fd, "STARTUP");
+    tty_writecmd (tty_fd, "STARTUP", NULL);
 
     loop = g_main_loop_new (NULL, FALSE);
 
-    iochan = g_io_channel_unix_new (fd);
+    iochan = g_io_channel_unix_new (tty_fd);
     g_io_add_watch (iochan, G_IO_IN, receive_data, strbuf);
     g_io_channel_unref (iochan);
 

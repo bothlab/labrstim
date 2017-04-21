@@ -1,0 +1,12 @@
+[Unit]
+Description=Labrstrim TTY Interface
+After=syslog.target
+
+[Service]
+Type=simple
+Restart=on-failure
+ProtectSystem=full
+ExecStart=@LSTTYCTL_INSTALL_BIN@
+
+[Install]
+WantedBy=multi-user.target

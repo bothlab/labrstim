@@ -33,6 +33,7 @@ labrstim_src = [
 fftw3_dep  = dependency('fftw3f') # single-precision fftw
 thread_dep = dependency('threads')
 glib_dep = dependency('glib-2.0')
+systemd_dep = dependency('systemd')
 math_lib = compiler.find_library('m')
 
 #
@@ -85,10 +86,27 @@ executable('labrstim',
                           thread_dep,
                           glib_dep,
                           math_lib,
-                          galdur_dep]
+                          galdur_dep],
+           install: true
 )
 
 executable('labrstim-ttyctl',
            ['src/ttyctl.c'],
-           dependencies: [glib_dep]
+           dependencies: [glib_dep],
+           install: true
+)
+
+
+#
+# Data
+#
+
+sd_data = configuration_data()
+sd_data.set('LSTTYCTL_INSTALL_BIN', get_option('prefix') + '/bin/labrstim-ttyctl')
+
+configure_file(input: 'src/labrstim-ttyctl.service.in',
+               output: 'labrstim-ttyctl.service',
+               configuration: sd_data)
+install_data(meson.current_build_dir() + '/labrstim-ttyctl.service',
+             install_dir: systemd_dep.get_pkgconfig_variable('systemdsystemunitdir')
 )
