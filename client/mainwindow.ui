@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>699</width>
-    <height>519</height>
+    <width>677</width>
+    <height>626</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -81,12 +81,12 @@
             </item>
             <item>
              <property name="text">
-              <string>Train Stimulation</string>
+              <string>Theta Stimulation</string>
              </property>
             </item>
             <item>
              <property name="text">
-              <string>Random Stimulation</string>
+              <string>Train Stimulation</string>
              </property>
             </item>
            </widget>
@@ -133,7 +133,7 @@
             <property name="time">
              <time>
               <hour>0</hour>
-              <minute>7</minute>
+              <minute>4</minute>
               <second>0</second>
              </time>
             </property>
@@ -147,12 +147,12 @@
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QDoubleSpinBox" name="pulseDurationLineEdit">
+           <widget class="QDoubleSpinBox" name="pulseDurationSpinBox">
             <property name="suffix">
              <string>ms</string>
             </property>
             <property name="value">
-             <double>20.000000000000000</double>
+             <double>0.000000000000000</double>
             </property>
            </widget>
           </item>
@@ -164,12 +164,12 @@
            </widget>
           </item>
           <item row="2" column="1">
-           <widget class="QDoubleSpinBox" name="laserIntensityDoubleSpinBox">
+           <widget class="QDoubleSpinBox" name="laserIntensitySpinBox">
             <property name="suffix">
              <string>V</string>
             </property>
             <property name="value">
-             <double>2.000000000000000</double>
+             <double>0.000000000000000</double>
             </property>
            </widget>
           </item>
@@ -215,12 +215,12 @@
              <string>Randomi&amp;zed Interval</string>
             </property>
             <property name="buddy">
-             <cstring>enableRandomIntervalCheckBox</cstring>
+             <cstring>randomIntervalCheckBox</cstring>
             </property>
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="QCheckBox" name="enableRandomIntervalCheckBox">
+           <widget class="QCheckBox" name="randomIntervalCheckBox">
             <property name="checked">
              <bool>false</bool>
             </property>
@@ -235,12 +235,12 @@
              <string>&amp;Minimum Interval [ms]</string>
             </property>
             <property name="buddy">
-             <cstring>minimumIntervalDoubleSpinBox</cstring>
+             <cstring>minimumIntervalSpinBox</cstring>
             </property>
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QDoubleSpinBox" name="minimumIntervalDoubleSpinBox">
+           <widget class="QDoubleSpinBox" name="minimumIntervalSpinBox">
             <property name="enabled">
              <bool>false</bool>
             </property>
@@ -255,12 +255,12 @@
              <string>Maximum Inte&amp;rval [ms]</string>
             </property>
             <property name="buddy">
-             <cstring>maximumIntervalDoubleSpinBox</cstring>
+             <cstring>maximumIntervalSpinBox</cstring>
             </property>
            </widget>
           </item>
           <item row="2" column="1">
-           <widget class="QDoubleSpinBox" name="maximumIntervalDoubleSpinBox">
+           <widget class="QDoubleSpinBox" name="maximumIntervalSpinBox">
             <property name="enabled">
              <bool>false</bool>
             </property>
@@ -390,10 +390,10 @@
         <enum>QFrame::Sunken</enum>
        </property>
        <property name="currentIndex">
-        <number>2</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="swrStimPage">
-        <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <layout class="QVBoxLayout" name="verticalLayout_7">
          <property name="spacing">
           <number>6</number>
          </property>
@@ -401,57 +401,111 @@
           <number>6</number>
          </property>
          <item>
-          <widget class="QWidget" name="widget_4" native="true">
-           <layout class="QFormLayout" name="formLayout">
-            <item row="0" column="0">
-             <widget class="QLabel" name="swrRefractoryTimeLabel">
-              <property name="text">
-               <string>SWR Refractory Time</string>
-              </property>
+          <widget class="QWidget" name="widget" native="true">
+           <property name="minimumSize">
+            <size>
+             <width>200</width>
+             <height>0</height>
+            </size>
+           </property>
+           <layout class="QHBoxLayout" name="horizontalLayout">
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QWidget" name="widget_4" native="true">
+              <layout class="QFormLayout" name="formLayout">
+               <item row="0" column="0">
+                <widget class="QLabel" name="swrRefractoryTimeLabel">
+                 <property name="text">
+                  <string>SWR Refractory Time</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QDoubleSpinBox" name="swrRefractoryTimeSpinBox"/>
+               </item>
+               <item row="1" column="0">
+                <widget class="QLabel" name="swrPowerThresholdLabel">
+                 <property name="text">
+                  <string>SWR Power Threshold</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QDoubleSpinBox" name="swrPowerThresholdDoubleSpinBox"/>
+               </item>
+               <item row="2" column="0">
+                <widget class="QLabel" name="convolutionPeakThresholdLabel">
+                 <property name="text">
+                  <string>Convolution Peak Threshold</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="1">
+                <widget class="QDoubleSpinBox" name="convolutionPeakThresholdSpinBox"/>
+               </item>
+              </layout>
              </widget>
             </item>
-            <item row="0" column="1">
-             <widget class="QDoubleSpinBox" name="swrRefractoryTimeSpinBox"/>
-            </item>
-            <item row="1" column="0">
-             <widget class="QLabel" name="swrPowerThresholdLabel">
-              <property name="text">
-               <string>SWR Power Threshold</string>
+            <item>
+             <widget class="QGroupBox" name="groupBox_3">
+              <property name="title">
+               <string>Stimulation Delay</string>
               </property>
+              <layout class="QVBoxLayout" name="verticalLayout_6">
+               <item>
+                <widget class="QCheckBox" name="stimDelayCheckBox">
+                 <property name="text">
+                  <string>Enabled</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="label">
+                 <property name="text">
+                  <string>Use the random intervals&lt;br/&gt;to set the delay between&lt;br/&gt;SWR detection and stimulation.
+</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
              </widget>
             </item>
-            <item row="1" column="1">
-             <widget class="QDoubleSpinBox" name="swrPowerThresholdDoubleSpinBox"/>
-            </item>
-            <item row="2" column="0">
-             <widget class="QLabel" name="convolutionPeakThresholdLabel">
-              <property name="text">
-               <string>Convolution Peak Threshold</string>
+            <item>
+             <spacer name="horizontalSpacer_2">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
               </property>
-             </widget>
-            </item>
-            <item row="2" column="1">
-             <widget class="QDoubleSpinBox" name="convolutionPeakThresholdSpinBox"/>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
             </item>
            </layout>
           </widget>
          </item>
          <item>
-          <widget class="QGroupBox" name="groupBox_3">
-           <property name="title">
-            <string>Delay SWR</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <spacer name="horizontalSpacer_2">
+          <spacer name="verticalSpacer_2">
            <property name="orientation">
-            <enum>Qt::Horizontal</enum>
+            <enum>Qt::Vertical</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
-             <width>40</width>
-             <height>20</height>
+             <width>20</width>
+             <height>40</height>
             </size>
            </property>
           </spacer>
@@ -478,7 +532,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="randomStimPage">
+       <widget class="QWidget" name="trainStimPage">
         <layout class="QVBoxLayout" name="verticalLayout_5">
          <item>
           <widget class="QWidget" name="widget_6" native="true">
@@ -525,7 +579,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>699</width>
+     <width>677</width>
      <height>30</height>
     </rect>
    </property>
@@ -676,66 +730,66 @@
  <resources/>
  <connections>
   <connection>
-   <sender>enableRandomIntervalCheckBox</sender>
+   <sender>randomIntervalCheckBox</sender>
    <signal>toggled(bool)</signal>
-   <receiver>minimumIntervalDoubleSpinBox</receiver>
+   <receiver>minimumIntervalSpinBox</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>366</x>
-     <y>117</y>
+     <x>552</x>
+     <y>124</y>
     </hint>
     <hint type="destinationlabel">
-     <x>398</x>
-     <y>157</y>
+     <x>592</x>
+     <y>164</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>enableRandomIntervalCheckBox</sender>
+   <sender>randomIntervalCheckBox</sender>
    <signal>toggled(bool)</signal>
-   <receiver>maximumIntervalDoubleSpinBox</receiver>
+   <receiver>maximumIntervalSpinBox</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>374</x>
-     <y>111</y>
+     <x>552</x>
+     <y>124</y>
     </hint>
     <hint type="destinationlabel">
-     <x>369</x>
-     <y>195</y>
+     <x>592</x>
+     <y>204</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>enableRandomIntervalCheckBox</sender>
+   <sender>randomIntervalCheckBox</sender>
    <signal>toggled(bool)</signal>
    <receiver>minimumIntervalLabel</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>372</x>
-     <y>115</y>
+     <x>552</x>
+     <y>124</y>
     </hint>
     <hint type="destinationlabel">
-     <x>234</x>
-     <y>153</y>
+     <x>518</x>
+     <y>163</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>enableRandomIntervalCheckBox</sender>
+   <sender>randomIntervalCheckBox</sender>
    <signal>toggled(bool)</signal>
    <receiver>maximumIntervalLabel</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>371</x>
-     <y>120</y>
+     <x>552</x>
+     <y>124</y>
     </hint>
     <hint type="destinationlabel">
-     <x>279</x>
-     <y>186</y>
+     <x>518</x>
+     <y>203</y>
     </hint>
    </hints>
   </connection>
@@ -746,12 +800,44 @@
    <slot>setCurrentIndex(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>495</x>
-     <y>157</y>
+     <x>163</x>
+     <y>169</y>
     </hint>
     <hint type="destinationlabel">
-     <x>904</x>
-     <y>230</y>
+     <x>697</x>
+     <y>363</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>stimDelayCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>randomIntervalCheckBox</receiver>
+   <slot>setChecked(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>318</x>
+     <y>278</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>542</x>
+     <y>115</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>stimDelayCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>randomIntervalCheckBox</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>290</x>
+     <y>275</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>529</x>
+     <y>111</y>
     </hint>
    </hints>
   </connection>

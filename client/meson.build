@@ -9,12 +9,14 @@ qt5_dep = dependency('qt5', modules : ['Gui', 'SerialPort', 'Svg'])
 client_src = [
     'main.cpp',
     'mainwindow.cpp',
-    'settingsdialog.cpp'
+    'settingsdialog.cpp',
+    'labrstimclient.cpp'
 ]
 
 client_headers = [
     'mainwindow.h',
-    'settingsdialog.h'
+    'settingsdialog.h',
+    'labrstimclient.h'
 ]
 
 client_ui = [

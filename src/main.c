@@ -448,7 +448,7 @@ labrstim_make_realtime (void)
 {
     /* set scheduler policy */
     struct sched_param param;
-    param.sched_priority = MY_PRIORITY;
+    param.sched_priority = LS_PRIORITY;
     if (sched_setscheduler (0, SCHED_FIFO, &param) == -1) {
         fprintf (stderr, "%s : sched_setscheduler failed\n", APP_NAME);
         fprintf (stderr,

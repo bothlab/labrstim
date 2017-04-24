@@ -61,9 +61,10 @@
 #define SIZE_ROOT_MEAN_SQUARE_ARRAY 10000
 
 /* RT process defaults */
-#define MY_PRIORITY     49      /* we use 49 as the PRREMPT_RT use 50
+#define LS_PRIORITY     49      /* we use 49 as the PRREMPT_RT use 50
                                    as the priority of kernel tasklets
                                    and interrupt handler by default */
+#define LSTTYCTL_PRIORITY 28   /* priority of the tty communication bridge */
 
 #define MAX_SAFE_STACK (8*1024) /* The maximum stack size which is
                                    guranteed safe to access without

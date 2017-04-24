@@ -28,11 +28,12 @@
 #include <termios.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <gio/gunixinputstream.h>
 
 #include "defaults.h"
 
 static GPid labrstim_proc_pid = 0;
-static int labrstim_stderr_fd = 0;
+static GInputStream *labrstim_stderr = NULL;
 
 /* fd of the tty we are connected to to communicate with the master */
 static int tty_fd = -1;
@@ -135,8 +136,29 @@ labrstim_command_exited (GPid pid, gint status, gpointer user_data)
         /* we exited normally or received SIGTERM */
         tty_writecmd (tty_fd, "FINISHED", tmp);
     } else {
-        /* TODO: Send the stderr output over the wire */
-        tty_writecmd (tty_fd, "ERROR", "Labrstim exited with an error code.");
+        g_autofree gchar *buf = NULL;
+        g_autofree gchar *tmp = NULL;
+        g_autofree gchar *msg = NULL;
+        static const gsize buf_size = 1536;
+        gsize bytes_read;
+        g_autoptr(GError) error = NULL;
+
+        buf = g_malloc (buf_size); /* this buffer should be big enozgh for the largers errors */
+        g_input_stream_read_all (labrstim_stderr,
+                                 buf,
+                                 buf_size,
+                                 &bytes_read,
+                                 NULL,
+                                 &error);
+        if (error == NULL) {
+            buf[bytes_read - 1] = '\0';
+            tmp = g_strescape (buf, NULL);
+        } else {
+            tmp = g_strdup_printf ("Unable to read from stderr: %s", error->message);
+        }
+
+        msg = g_strdup_printf ("Labrstim exited with an error: %s", tmp);
+        tty_writecmd (tty_fd, "ERROR",  msg);
     }
 
     labrstim_proc_pid = 0;
@@ -157,11 +179,16 @@ run_labrstim_command (const gchar *lstim_cmd)
     g_autoptr(GError) error = NULL;
     g_auto(GStrv) args = NULL;
     g_autofree gchar *cmd_raw = NULL;
+    int ls_stderr;
 
     if (labrstim_proc_pid != 0) {
         tty_writecmd (tty_fd, "ERROR", "Already running.");
         return;
     }
+
+    /* clean up */
+    if (labrstim_stderr != NULL)
+        g_object_unref (labrstim_stderr);
 
     /* create the final command */
     cmd_raw = g_strdup_printf ("labrstim %s", lstim_cmd);
@@ -176,7 +203,7 @@ run_labrstim_command (const gchar *lstim_cmd)
                           &labrstim_proc_pid,
                           NULL, /* stdin */
                           NULL, /* we ignore stdout for now */
-                          &labrstim_stderr_fd,
+                          &ls_stderr,
                           &error);
     if (!ret) {
         g_autofree gchar *tmp = NULL;
@@ -189,6 +216,7 @@ run_labrstim_command (const gchar *lstim_cmd)
                        NULL);
     }
 
+    labrstim_stderr = g_unix_input_stream_new (ls_stderr, TRUE);
     tty_writecmd (tty_fd, "OK", NULL);
 }
 
@@ -271,11 +299,28 @@ receive_data (GIOChannel *io, GIOCondition condition, gpointer data)
     return TRUE;
 }
 
+static gboolean
+lsttyctl_make_realtime (void)
+{
+    /* set scheduler policy */
+    struct sched_param param;
+    param.sched_priority = LSTTYCTL_PRIORITY;
+    if (sched_setscheduler (0, SCHED_FIFO, &param) == -1) {
+        g_printerr ("Do you have permission to run real-time applications? You might need to be root or use sudo\n");
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 int main()
 {
     g_autoptr(GMainLoop) loop = NULL;
     g_autoptr(GString) strbuf = NULL;
     GIOChannel *iochan;
+
+    if (!lsttyctl_make_realtime ())
+        return 2;
 
     tty_fd = open (PI_TTY_CTLPORT, O_RDWR | O_NOCTTY | O_SYNC);
     if (tty_fd < 0) {

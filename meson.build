@@ -34,6 +34,7 @@ fftw3_dep  = dependency('fftw3f') # single-precision fftw
 thread_dep = dependency('threads')
 glib_dep = dependency('glib-2.0')
 systemd_dep = dependency('systemd')
+gio_unix_dep = dependency('gio-unix-2.0')
 math_lib = compiler.find_library('m')
 
 #
@@ -92,7 +93,8 @@ executable('labrstim',
 
 executable('labrstim-ttyctl',
            ['src/ttyctl.c'],
-           dependencies: [glib_dep],
+           dependencies: [glib_dep,
+                          gio_unix_dep],
            install: true
 )
 
