@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>677</width>
+    <width>660</width>
     <height>626</height>
    </rect>
   </property>
@@ -18,6 +18,10 @@
   </property>
   <property name="windowTitle">
    <string>Labrstim Client</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="res.qrc">
+    <normaloff>:/icons/laser.png</normaloff>:/icons/laser.png</iconset>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -120,6 +124,9 @@
             <property name="text">
              <string>Trial Duration</string>
             </property>
+            <property name="buddy">
+             <cstring>trialDurationTimeEdit</cstring>
+            </property>
            </widget>
           </item>
           <item row="0" column="1">
@@ -144,6 +151,9 @@
             <property name="text">
              <string>Pulse Duration</string>
             </property>
+            <property name="buddy">
+             <cstring>pulseDurationSpinBox</cstring>
+            </property>
            </widget>
           </item>
           <item row="1" column="1">
@@ -160,6 +170,9 @@
            <widget class="QLabel" name="laserIntensityLabel">
             <property name="text">
              <string>Laser Intensity</string>
+            </property>
+            <property name="buddy">
+             <cstring>laserIntensitySpinBox</cstring>
             </property>
            </widget>
           </item>
@@ -210,7 +223,10 @@
            <number>6</number>
           </property>
           <item row="0" column="0">
-           <widget class="QLabel" name="enableRandomIntervalLabel">
+           <widget class="QLabel" name="randomIntervalLabel">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="text">
              <string>Randomi&amp;zed Interval</string>
             </property>
@@ -221,6 +237,9 @@
           </item>
           <item row="0" column="1">
            <widget class="QCheckBox" name="randomIntervalCheckBox">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="checked">
              <bool>false</bool>
             </property>
@@ -244,6 +263,9 @@
             <property name="enabled">
              <bool>false</bool>
             </property>
+            <property name="minimum">
+             <double>1.000000000000000</double>
+            </property>
            </widget>
           </item>
           <item row="2" column="0">
@@ -263,6 +285,9 @@
            <widget class="QDoubleSpinBox" name="maximumIntervalSpinBox">
             <property name="enabled">
              <bool>false</bool>
+            </property>
+            <property name="minimum">
+             <double>2.000000000000000</double>
             </property>
            </widget>
           </item>
@@ -429,6 +454,9 @@
                  <property name="text">
                   <string>SWR Refractory Time</string>
                  </property>
+                 <property name="buddy">
+                  <cstring>swrRefractoryTimeSpinBox</cstring>
+                 </property>
                 </widget>
                </item>
                <item row="0" column="1">
@@ -439,6 +467,9 @@
                  <property name="text">
                   <string>SWR Power Threshold</string>
                  </property>
+                 <property name="buddy">
+                  <cstring>swrPowerThresholdDoubleSpinBox</cstring>
+                 </property>
                 </widget>
                </item>
                <item row="1" column="1">
@@ -447,7 +478,10 @@
                <item row="2" column="0">
                 <widget class="QLabel" name="convolutionPeakThresholdLabel">
                  <property name="text">
-                  <string>Convolution Peak Threshold</string>
+                  <string>&amp;Convolution Peak Threshold</string>
+                 </property>
+                 <property name="buddy">
+                  <cstring>convolutionPeakThresholdSpinBox</cstring>
                  </property>
                 </widget>
                </item>
@@ -522,10 +556,17 @@
               <property name="text">
                <string>Theta Phase</string>
               </property>
+              <property name="buddy">
+               <cstring>thetaPhaseSpinBox</cstring>
+              </property>
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QDoubleSpinBox" name="thetaPhaseDoubleSpinBox"/>
+             <widget class="QDoubleSpinBox" name="thetaPhaseSpinBox">
+              <property name="maximum">
+               <double>360.000000000000000</double>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>
@@ -540,12 +581,19 @@
             <item row="0" column="0">
              <widget class="QLabel" name="trainFrequencyLabel">
               <property name="text">
-               <string>Frequency</string>
+               <string>Fre&amp;quency</string>
+              </property>
+              <property name="buddy">
+               <cstring>trainFrequencySpinBox</cstring>
               </property>
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QDoubleSpinBox" name="trainFrequencySpinBox"/>
+             <widget class="QDoubleSpinBox" name="trainFrequencySpinBox">
+              <property name="minimum">
+               <double>1.000000000000000</double>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>
@@ -579,7 +627,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>677</width>
+     <width>660</width>
      <height>30</height>
     </rect>
    </property>
@@ -727,7 +775,9 @@
    <container>1</container>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="res.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>randomIntervalCheckBox</sender>
@@ -736,11 +786,11 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>552</x>
+     <x>536</x>
      <y>124</y>
     </hint>
     <hint type="destinationlabel">
-     <x>592</x>
+     <x>576</x>
      <y>164</y>
     </hint>
    </hints>
@@ -752,11 +802,11 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>552</x>
+     <x>536</x>
      <y>124</y>
     </hint>
     <hint type="destinationlabel">
-     <x>592</x>
+     <x>576</x>
      <y>204</y>
     </hint>
    </hints>
@@ -768,11 +818,11 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>552</x>
+     <x>536</x>
      <y>124</y>
     </hint>
     <hint type="destinationlabel">
-     <x>518</x>
+     <x>502</x>
      <y>163</y>
     </hint>
    </hints>
@@ -784,11 +834,11 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>552</x>
+     <x>536</x>
      <y>124</y>
     </hint>
     <hint type="destinationlabel">
-     <x>518</x>
+     <x>502</x>
      <y>203</y>
     </hint>
    </hints>
@@ -800,12 +850,12 @@
    <slot>setCurrentIndex(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>163</x>
+     <x>147</x>
      <y>169</y>
     </hint>
     <hint type="destinationlabel">
-     <x>697</x>
-     <y>363</y>
+     <x>675</x>
+     <y>409</y>
     </hint>
    </hints>
   </connection>
@@ -820,8 +870,8 @@
      <y>278</y>
     </hint>
     <hint type="destinationlabel">
-     <x>542</x>
-     <y>115</y>
+     <x>536</x>
+     <y>124</y>
     </hint>
    </hints>
   </connection>

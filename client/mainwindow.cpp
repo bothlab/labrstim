@@ -79,8 +79,12 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->trialDurationTimeEdit->setTime(QTime(0, 7, 0));
     ui->pulseDurationSpinBox->setValue(20);
     ui->laserIntensitySpinBox->setValue(2);
+    ui->minimumIntervalSpinBox->setValue(10);
+    ui->maximumIntervalSpinBox->setValue(20);
 
     ui->swrPowerThresholdDoubleSpinBox->setValue(3);
+    ui->thetaPhaseSpinBox->setValue(90);
+    ui->trainFrequencySpinBox->setValue(6);
 }
 
 MainWindow::~MainWindow()
@@ -175,9 +179,13 @@ void MainWindow::on_actionStop_triggered()
 
 void MainWindow::on_stimTypeComboBox_currentIndexChanged(int index)
 {
+    ui->randomIntervalCheckBox->setEnabled(true);
+    ui->randomIntervalLabel->setEnabled(true);
     switch (index) {
         case 0:
             m_client->setMode(LabrstimClient::ModeSwr);
+            ui->randomIntervalCheckBox->setEnabled(false);
+            ui->randomIntervalLabel->setEnabled(false);
             break;
         case 1:
             m_client->setMode(LabrstimClient::ModeTheta);
@@ -214,11 +222,17 @@ void MainWindow::on_randomIntervalCheckBox_toggled(bool checked)
 void MainWindow::on_minimumIntervalSpinBox_valueChanged(double arg1)
 {
     m_client->setMinimumInterval(arg1);
+    if (ui->maximumIntervalSpinBox->value() <= arg1) {
+        ui->maximumIntervalSpinBox->setValue(arg1 + 1);
+    }
 }
 
 void MainWindow::on_maximumIntervalSpinBox_valueChanged(double arg1)
 {
     m_client->setMaximumInterval(arg1);
+    if (ui->minimumIntervalSpinBox->value() >= arg1) {
+        ui->minimumIntervalSpinBox->setValue(arg1 - 1);
+    }
 }
 
 void MainWindow::on_swrRefractoryTimeSpinBox_valueChanged(double arg1)
@@ -236,7 +250,12 @@ void MainWindow::on_convolutionPeakThresholdSpinBox_valueChanged(double arg1)
     m_client->setConvolutionPeakThreshold(arg1);
 }
 
-void MainWindow::on_stimDelayCheckBox_toggled(bool checked)
+void MainWindow::on_thetaPhaseSpinBox_valueChanged(double arg1)
 {
-    m_client->setSwrDelayStimulation(checked);
+    m_client->setThetaPhase(arg1);
+}
+
+void MainWindow::on_trainFrequencySpinBox_valueChanged(double arg1)
+{
+    m_client->setTrainFrequency(arg1);
 }

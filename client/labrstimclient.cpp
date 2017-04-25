@@ -70,10 +70,10 @@ QString LabrstimClient::sendRequest(const QString &req)
     m_serial->write(QStringLiteral("%1\n").arg(req).toUtf8());
     emit newRawData(QStringLiteral("=> %1\n").arg(req));
 
-    for (uint i = 1; i < 24; i++) {
+    for (uint i = 1; i < 20; i++) {
         QCoreApplication::processEvents();
 
-        if (m_lastResult.endsWith("\n")) {
+        if (!m_lastResult.isEmpty()) {
             return getLastResult();
         }
 
@@ -83,66 +83,6 @@ QString LabrstimClient::sendRequest(const QString &req)
     // we didn't get a reply
     emitError(QStringLiteral("No reply received in time (Request: %1).").arg(req));
     return QString();
-}
-
-QString LabrstimClient::clientVersion() const
-{
-    return m_clientVersion;
-}
-
-void LabrstimClient::setMode(LabrstimClient::Mode mode)
-{
-    m_mode = mode;
-}
-
-void LabrstimClient::setTrialDuration(double val)
-{
-    m_trialDuration = val;
-}
-
-void LabrstimClient::setPulseDuration(double val)
-{
-    m_pulseDuration = val;
-}
-
-void LabrstimClient::setLaserIntensity(double val)
-{
-    m_laserIntensity = val;
-}
-
-void LabrstimClient::setRandomIntervals(bool random)
-{
-    m_randomIntervals = random;
-}
-
-void LabrstimClient::setMinimumInterval(double min)
-{
-    m_minimumInterval = min;
-}
-
-void LabrstimClient::setMaximumInterval(double max)
-{
-    m_maximumInterval = max;
-}
-
-void LabrstimClient::setSwrRefractoryTime(double val)
-{
-    m_swrRefractoryTime = val;
-}
-
-void LabrstimClient::setSwrPowerThreshold(double val)
-{
-    m_swrPowerThreshold = val;
-}
-
-void LabrstimClient::setConvolutionPeakThreshold(double val)
-{
-    m_convolutionPeakThreshold = val;
-}
-
-void LabrstimClient::setSwrDelayStimulation(bool delay)
-{
-    m_swrDelayStimulation = delay;
 }
 
 bool LabrstimClient::open(const QString &portName)
@@ -220,14 +160,27 @@ bool LabrstimClient::runStimulation()
     command.append(QString(" %1").arg(m_laserIntensity));
 
     // SWR-specific settings
-    if (m_swrRefractoryTime != 0)
-        command.append(QString(" -f %1").arg(m_swrRefractoryTime));
-    if (m_swrPowerThreshold != 0)
-        command.append(QString(" -s %1").arg(m_swrPowerThreshold));
+    if (m_mode == ModeSwr) {
+        if (m_swrRefractoryTime != 0)
+            command.append(QString(" -f %1").arg(m_swrRefractoryTime));
+        if (m_swrPowerThreshold != 0)
+            command.append(QString(" -s %1").arg(m_swrPowerThreshold));
 
-    command.append(QString(" -C %1").arg(m_convolutionPeakThreshold));
+        command.append(QString(" -C %1").arg(m_convolutionPeakThreshold));
 
-    if (m_swrDelayStimulation) {
+    } else if (m_mode == ModeTheta) {
+        command.append(QString(" -t %1").arg(m_thetaPhase));
+        if (m_randomIntervals)
+            command.append(QString(" -R"));
+
+    } else if (m_mode == ModeTrain) {
+        command.append(QString(" -T %1").arg(m_trainFrequency));
+        if (m_randomIntervals)
+            command.append(QString(" -R"));
+    }
+
+    // random intervals count for all modes
+    if (m_randomIntervals) {
         command.append(QString(" -m %1").arg(m_minimumInterval));
         command.append(QString(" -M %1").arg(m_maximumInterval));
     }
@@ -250,6 +203,7 @@ bool LabrstimClient::stopStimulation()
     }
 
     auto res = sendRequest("STOP");
+    qDebug () << res;
     if ((res != "OK") && (!res.startsWith("FINISHED"))) {
         emitError(QStringLiteral("Unable to stop stimulation."));
         return false;
@@ -267,19 +221,24 @@ void LabrstimClient::readData()
     // quick & dirty
     m_lastResultBuf.append(QString(data));
     if (m_lastResultBuf.endsWith("\n")) {
-        m_lastResult = m_lastResultBuf;
-        m_lastResultBuf = QString();
+        // we might read multiple lines, process them individually
+        auto replies = m_lastResultBuf.split("\n", QString::SkipEmptyParts);
+        foreach (auto reply, replies) {
+            m_lastResult = reply;
 
-        if (m_lastResult.startsWith("ERROR")) {
-            emitError(getLastResult());
-            if (m_running)
-                emit stimulationFinished();
-            m_running = false;
-        } else if (m_lastResult.startsWith("FINISHED")) {
-            if (m_running)
-                emit stimulationFinished();
-            m_running = false;
+            if (m_lastResult.startsWith("ERROR")) {
+                emitError(getLastResult());
+                if (m_running)
+                    emit stimulationFinished();
+                m_running = false;
+            } else if (m_lastResult.startsWith("FINISHED")) {
+                if (m_running)
+                    emit stimulationFinished();
+                m_running = false;
+            }
         }
+
+        m_lastResultBuf = QString();
     }
 }
 
@@ -295,6 +254,7 @@ QString LabrstimClient::getLastResult()
 {
     auto res = m_lastResult.replace("\n", "").replace("\\n", "\n");
     m_lastResult = QString();
+
     return res;
 }
 
@@ -302,4 +262,74 @@ void LabrstimClient::emitError(const QString &message)
 {
     m_lastError = message;
     emit error(m_lastError);
+}
+
+QString LabrstimClient::clientVersion() const
+{
+    return m_clientVersion;
+}
+
+void LabrstimClient::setMode(LabrstimClient::Mode mode)
+{
+    m_mode = mode;
+}
+
+void LabrstimClient::setTrialDuration(double val)
+{
+    m_trialDuration = val;
+}
+
+void LabrstimClient::setPulseDuration(double val)
+{
+    m_pulseDuration = val;
+}
+
+void LabrstimClient::setLaserIntensity(double val)
+{
+    m_laserIntensity = val;
+}
+
+void LabrstimClient::setRandomIntervals(bool random)
+{
+    m_randomIntervals = random;
+}
+
+void LabrstimClient::setMinimumInterval(double min)
+{
+    m_minimumInterval = min;
+}
+
+void LabrstimClient::setMaximumInterval(double max)
+{
+    m_maximumInterval = max;
+}
+
+void LabrstimClient::setSwrRefractoryTime(double val)
+{
+    m_swrRefractoryTime = val;
+}
+
+void LabrstimClient::setSwrPowerThreshold(double val)
+{
+    m_swrPowerThreshold = val;
+}
+
+void LabrstimClient::setConvolutionPeakThreshold(double val)
+{
+    m_convolutionPeakThreshold = val;
+}
+
+void LabrstimClient::setSwrDelayStimulation(bool delay)
+{
+    m_swrDelayStimulation = delay;
+}
+
+void LabrstimClient::setThetaPhase(double val)
+{
+    m_thetaPhase = val;
+}
+
+void LabrstimClient::setTrainFrequency(double val)
+{
+    m_trainFrequency = val;
 }

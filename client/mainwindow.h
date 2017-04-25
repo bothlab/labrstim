@@ -70,7 +70,9 @@ private slots:
 
     void on_convolutionPeakThresholdSpinBox_valueChanged(double arg1);
 
-    void on_stimDelayCheckBox_toggled(bool checked);
+    void on_thetaPhaseSpinBox_valueChanged(double arg1);
+
+    void on_trainFrequencySpinBox_valueChanged(double arg1);
 
 private:
     void setStatusMessage(const QString &msg);

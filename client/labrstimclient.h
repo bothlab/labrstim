@@ -57,6 +57,10 @@ public:
     void setConvolutionPeakThreshold(double val);
     void setSwrDelayStimulation(bool delay);
 
+    void setThetaPhase(double val);
+
+    void setTrainFrequency(double val);
+
 public slots:
     bool open(const QString& portName);
     void close();
@@ -100,6 +104,10 @@ private:
     double m_swrPowerThreshold;
     double m_convolutionPeakThreshold;
     bool m_swrDelayStimulation;
+
+    double m_thetaPhase;
+
+    double m_trainFrequency;
 };
 
 #endif // LABRSTIMCLIENT_H
