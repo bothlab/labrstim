@@ -113,10 +113,9 @@ labrstim_option_context_parse (GOptionContext *opt_context, const gchar *subcomm
 
     g_option_context_parse (opt_context, argc, argv, &error);
     if (error != NULL) {
-        gchar *msg;
+        g_autofree gchar *msg = NULL;
         msg = g_strconcat (error->message, "\n", NULL);
-        g_print ("%s", msg);
-        g_free (msg);
+        g_printerr ("%s", msg);
 
         labrstim_print_help_hint (subcommand, NULL);
         return 1;
@@ -177,12 +176,12 @@ labrstim_get_stim_parameters (char **argv, int argc, double *trial_duration_sec,
     /* check if we have the required number of arguments */
     if (argc != 5) {
         gint i;
-        fprintf (stderr, "Usage for %s is \n", APP_NAME);
-        fprintf (stderr, "%s %s [trial duration (sec)] [pulse duration (ms)] [laser intensity (volts)]\n", argv[0], argv[1]);
-        fprintf (stderr, "You need %d arguments but gave %d arguments: \n",
+        g_printerr ("Usage for %s is \n", APP_NAME);
+        g_printerr ("%s %s [trial duration (sec)] [pulse duration (ms)] [laser intensity (volts)]\n", argv[0], argv[1]);
+        g_printerr ("You need %d arguments but gave %d arguments: \n",
                  3, argc - 2);
         for (i = 2; i < argc; i++) {
-            fprintf (stderr, "%s\n", argv[i]);
+            g_printerr ("%s\n", argv[i]);
         }
         return FALSE;
     }
@@ -450,9 +449,8 @@ labrstim_make_realtime (void)
     struct sched_param param;
     param.sched_priority = LS_PRIORITY;
     if (sched_setscheduler (0, SCHED_FIFO, &param) == -1) {
-        fprintf (stderr, "%s : sched_setscheduler failed\n", APP_NAME);
-        fprintf (stderr,
-                 "Do you have permission to run real-time applications? You might need to be root or use sudo\n");
+        g_printerr ("%s : sched_setscheduler failed\n", APP_NAME);
+        g_printerr ("Do you have permission to run real-time applications? You might need to be root or use sudo\n");
         return FALSE;
     }
 
@@ -464,7 +462,7 @@ labrstim_make_realtime (void)
 
     /* lock memory */
     if (mlockall (MCL_CURRENT | MCL_FUTURE) == -1) {
-        fprintf (stderr, "%s: mlockall failed", APP_NAME);
+        g_printerr ("%s: mlockall failed", APP_NAME);
         return FALSE;
     }
     /* pre-fault our stack */
@@ -556,9 +554,9 @@ main (int argc, char *argv[])
     }
 
     if (opt_show_version) {
-        printf ("%s %s\n", PACKAGE_NAME, PACKAGE_VERSION);
-        printf ("%s\n", PACKAGE_COPYRIGHT);
-        printf
+        g_print ("%s %s\n", PACKAGE_NAME, PACKAGE_VERSION);
+        g_print ("%s\n", PACKAGE_COPYRIGHT);
+        g_print
         ("License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>\n"
          "This is free software: you are free to change and redistribute it.\n"
          "There is NO WARRANTY, to the extent permitted by law.\n");
