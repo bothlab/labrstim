@@ -44,9 +44,10 @@ private slots:
     void openSerialPort();
     void closeSerialPort();
     void about();
-    void readRawData(const QString &data);
 
+    void readRawData(const QString &data);
     void handleError(const QString &message);
+    void onStimulationFinished();
 
     void on_actionStop_triggered();
 

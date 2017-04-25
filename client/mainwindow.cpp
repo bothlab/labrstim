@@ -59,8 +59,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionAbout, &QAction::triggered, this, &MainWindow::about);
 
     connect(m_client, &LabrstimClient::error, this, &MainWindow::handleError);
-
     connect(m_client, &LabrstimClient::newRawData, this, &MainWindow::readRawData);
+    connect(m_client, &LabrstimClient::stimulationFinished, this, &MainWindow::onStimulationFinished);
 
     // we can't run until we connected the stimulator device
     setRunning(false);
@@ -127,6 +127,11 @@ void MainWindow::readRawData(const QString& data)
 void MainWindow::handleError(const QString& message)
 {
     QMessageBox::critical(this, "Critical Error", message);
+}
+
+void MainWindow::onStimulationFinished()
+{
+    setRunning(false);
 }
 
 void MainWindow::setStatusMessage(const QString &msg)

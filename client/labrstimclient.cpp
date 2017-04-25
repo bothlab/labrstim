@@ -66,17 +66,18 @@ QString LabrstimClient::lastError() const
 QString LabrstimClient::sendRequest(const QString &req)
 {
     m_lastError = QString();
+    m_lastResult = QString();
     m_serial->write(QStringLiteral("%1\n").arg(req).toUtf8());
     emit newRawData(QStringLiteral("=> %1\n").arg(req));
 
-    for (uint i = 1; i < 8; i++) {
+    for (uint i = 1; i < 24; i++) {
         QCoreApplication::processEvents();
 
         if (m_lastResult.endsWith("\n")) {
             return getLastResult();
         }
 
-        QThread::msleep(200 * i);
+        QThread::msleep(50 * i);
     }
 
     // we didn't get a reply
@@ -233,7 +234,7 @@ bool LabrstimClient::runStimulation()
 
     auto res = sendRequest(command);
     if (res != "OK") {
-        emitError(QStringLiteral("Unable to start stimulation: %1").arg(res));
+        emitError(QStringLiteral("Unable to start stimulation."));
         return false;
     }
 
@@ -250,7 +251,7 @@ bool LabrstimClient::stopStimulation()
 
     auto res = sendRequest("STOP");
     if ((res != "OK") && (!res.startsWith("FINISHED"))) {
-        emitError(QStringLiteral("Unable to stop stimulation: %1").arg(res));
+        emitError(QStringLiteral("Unable to stop stimulation."));
         return false;
     }
 
@@ -264,9 +265,22 @@ void LabrstimClient::readData()
     emit newRawData(data);
 
     // quick & dirty
-    if (m_lastResult.endsWith("\n"))
-        m_lastResult = QString();
-    m_lastResult.append(QString(data));
+    m_lastResultBuf.append(QString(data));
+    if (m_lastResultBuf.endsWith("\n")) {
+        m_lastResult = m_lastResultBuf;
+        m_lastResultBuf = QString();
+
+        if (m_lastResult.startsWith("ERROR")) {
+            emitError(getLastResult());
+            if (m_running)
+                emit stimulationFinished();
+            m_running = false;
+        } else if (m_lastResult.startsWith("FINISHED")) {
+            if (m_running)
+                emit stimulationFinished();
+            m_running = false;
+        }
+    }
 }
 
 void LabrstimClient::handleError(QSerialPort::SerialPortError error)

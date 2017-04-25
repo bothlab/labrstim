@@ -71,6 +71,7 @@ private slots:
 signals:
     void newRawData(const QString& text);
     void error(const QString& message);
+    void stimulationFinished();
 
 private:
     QString getLastResult();
@@ -78,6 +79,7 @@ private:
 
     QSerialPort *m_serial;
     QString m_lastError;
+    QString m_lastResultBuf;
     QString m_lastResult;
 
     QString m_clientVersion;
