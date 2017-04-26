@@ -240,6 +240,60 @@ stop_labrstim_command ()
 
     tty_writecmd (tty_fd, "OK", NULL);
 }
+
+/**
+ * tty_replace_with_agetty:
+ *
+ * Replace the current process with agetty for maintenance purposes.
+ */
+static void
+tty_replace_with_agetty ()
+{
+    gchar *args[] = {"--autologin", "root",
+                     "-s",
+                     "ttyAMA0",
+                     "115200,38400,9600",
+                     "vt102",
+                     NULL };
+
+    execv ("/sbin/agetty", args);
+    /* we do not send an OK as this process won't exist anymore if the command succeeded */
+    tty_writecmd (tty_fd, "ERROR", g_strerror (errno));
+}
+
+/**
+ * shutdown_device:
+ *
+ * Shut down the whole device until it is manually
+ * restarted.
+ */
+static void
+shutdown_device ()
+{
+    int r;
+    r = system ("systemctl poweroff");
+    /* we do not send an OK as this process won't exist anymore if the command succeeded */
+    if (r != 0) {
+        tty_writecmd (tty_fd, "ERROR", g_strerror (errno));
+    }
+}
+
+/**
+ * reboot_device:
+ *
+ * Reboot the device.
+ */
+static void
+reboot_device ()
+{
+    int r;
+    r = system ("systemctl reboot");
+    /* we do not send an OK as this process won't exist anymore if the command succeeded */
+    if (r != 0) {
+        tty_writecmd (tty_fd, "ERROR", g_strerror (errno));
+    }
+}
+
 /**
  * process_command:
  *
@@ -262,6 +316,12 @@ process_command (const gchar *cmd)
         tty_writecmd (tty_fd, "PONG", NULL);
     } else if (g_strcmp0 (cmd, "NOOP") == 0) {
         /* we never greet back */
+    } else if (g_strcmp0 (cmd, "I_SOLEMNLY_SWEAR_THAT_IM_UP_TO_NO_GOOD") == 0) {
+        tty_replace_with_agetty ();
+    } else if (g_strcmp0 (cmd, "SHUTDOWN") == 0) {
+        shutdown_device ();
+    } else if (g_strcmp0 (cmd, "REBOOT") == 0) {
+        reboot_device ();
     } else {
         tty_writecmd (tty_fd, "UNKNOWN_CMD", NULL);
     }

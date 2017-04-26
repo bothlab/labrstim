@@ -63,12 +63,15 @@ QString LabrstimClient::lastError() const
     return m_lastError;
 }
 
-QString LabrstimClient::sendRequest(const QString &req)
+QString LabrstimClient::sendRequest(const QString &req, bool expectReply)
 {
     m_lastError = QString();
     m_lastResult = QString();
     m_serial->write(QStringLiteral("%1\n").arg(req).toUtf8());
     emit newRawData(QStringLiteral("=> %1\n").arg(req));
+
+    if (!expectReply)
+        return QString();
 
     for (uint i = 1; i < 20; i++) {
         QCoreApplication::processEvents();
@@ -213,6 +216,22 @@ bool LabrstimClient::stopStimulation()
     return true;
 }
 
+void LabrstimClient::rebootDevice()
+{
+    if (m_running)
+        stopStimulation();
+
+    sendRequest("REBOOT", false);
+}
+
+void LabrstimClient::shutdownDevice()
+{
+    if (m_running)
+        stopStimulation();
+
+    sendRequest("SHUTDOWN", false);
+}
+
 void LabrstimClient::readData()
 {
     auto data = m_serial->readAll();
@@ -231,7 +250,7 @@ void LabrstimClient::readData()
                 if (m_running)
                     emit stimulationFinished();
                 m_running = false;
-            } else if (m_lastResult.startsWith("FINISHED")) {
+            } else if (m_lastResult.startsWith("FINISHED") || m_lastResult == "STARTUP") {
                 if (m_running)
                     emit stimulationFinished();
                 m_running = false;

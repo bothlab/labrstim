@@ -39,7 +39,7 @@ public:
     ~LabrstimClient();
 
     QString lastError() const;
-    QString sendRequest(const QString& req);
+    QString sendRequest(const QString& req, bool expectReply = true);
     QString clientVersion() const;
 
     void setMode(Mode mode);
@@ -67,6 +67,9 @@ public slots:
 
     bool runStimulation();
     bool stopStimulation();
+
+    void rebootDevice();
+    void shutdownDevice();
 
 private slots:
     void readData();
