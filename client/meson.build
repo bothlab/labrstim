@@ -35,5 +35,9 @@ moc_files = qt5.preprocess(moc_headers: client_headers,
 
 executable('labrstimclient',
            client_src, moc_files,
-           dependencies : qt5_dep
+           dependencies : qt5_dep,
+           install : true
 )
+
+install_data('labrstimclient.svg', install_dir : join_paths(get_option('datadir'), 'icons', 'hicolor', 'scalable', 'apps'))
+install_data('labrstimclient.desktop', install_dir : join_paths(get_option('datadir'), 'applications'))

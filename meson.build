@@ -73,42 +73,48 @@ endif
 #
 # Subdirs
 #
-subdir('galdur')
+if (get_option('device'))
+    subdir('galdur')
+endif
 if (get_option('guiclient'))
     subdir('client')
 endif
 
 #
-# Targets
-#
-executable('labrstim',
-           [labrstim_src],
-           dependencies: [fftw3_dep,
-                          thread_dep,
-                          glib_dep,
-                          math_lib,
-                          galdur_dep],
-           install: true
-)
-
-executable('labrstim-ttyctl',
-           ['src/ttyctl.c'],
-           dependencies: [glib_dep,
-                          gio_unix_dep],
-           install: true
-)
-
-
-#
-# Data
+# Targets for device software
 #
 
-sd_data = configuration_data()
-sd_data.set('LSTTYCTL_INSTALL_BIN', get_option('prefix') + '/bin/labrstim-ttyctl')
+if (get_option('device'))
+    executable('labrstim',
+                [labrstim_src],
+                dependencies: [fftw3_dep,
+                                thread_dep,
+                                glib_dep,
+                                math_lib,
+                                galdur_dep],
+                install: true
+    )
 
-configure_file(input: 'src/labrstim-ttyctl.service.in',
-               output: 'labrstim-ttyctl.service',
-               configuration: sd_data)
-install_data(meson.current_build_dir() + '/labrstim-ttyctl.service',
-             install_dir: systemd_dep.get_pkgconfig_variable('systemdsystemunitdir')
-)
+    executable('labrstim-ttyctl',
+                ['src/ttyctl.c'],
+                dependencies: [glib_dep,
+                                gio_unix_dep],
+                install: true
+    )
+endif
+
+
+#
+# Data for device
+#
+if (get_option('device'))
+    sd_data = configuration_data()
+    sd_data.set('LSTTYCTL_INSTALL_BIN', get_option('prefix') + '/bin/labrstim-ttyctl')
+
+    configure_file(input: 'src/labrstim-ttyctl.service.in',
+                   output: 'labrstim-ttyctl.service',
+                   configuration: sd_data)
+    install_data(meson.current_build_dir() + '/labrstim-ttyctl.service',
+                   install_dir: systemd_dep.get_pkgconfig_variable('systemdsystemunitdir')
+    )
+endif

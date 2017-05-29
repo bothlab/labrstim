@@ -4,5 +4,6 @@
     </qresource>
     <qresource prefix="/icons">
         <file>laser.png</file>
+        <file>labrstimclient.svg</file>
     </qresource>
 </RCC>

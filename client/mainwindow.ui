@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>660</width>
+    <width>670</width>
     <height>626</height>
    </rect>
   </property>
@@ -21,7 +21,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="res.qrc">
-    <normaloff>:/icons/laser.png</normaloff>:/icons/laser.png</iconset>
+    <normaloff>:/icons/labrstimclient.svg</normaloff>:/icons/labrstimclient.svg</iconset>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -627,7 +627,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>660</width>
+     <width>670</width>
      <height>30</height>
     </rect>
    </property>

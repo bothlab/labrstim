@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=LaBrStim Client
+Comment=Stimulate your SWR and Theta automatically
+Exec=labrstimclient
+Icon=labrstimclient
+Categories=Science;Biology;
