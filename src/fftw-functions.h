@@ -108,7 +108,7 @@ struct fftw_interface_theta
     fftwf_plan fft_plan_backward_delta; // plan to do fft backward
 };
 
-int fftw_interface_theta_init (struct fftw_interface_theta* fftw_int); // should have parameters to allow signal of different length to be treated
+int fftw_interface_theta_init (struct fftw_interface_theta* fftw_int, int sampling_rate_hz); // should have parameters to allow signal of different length to be treated
 int fftw_interface_theta_free (struct fftw_interface_theta* fftw_int);
 int fftw_interface_theta_apply_filter_theta_delta (struct fftw_interface_theta* fftw_int);
 float fftw_interface_theta_delta_ratio (struct fftw_interface_theta* fftw_int);
@@ -117,7 +117,7 @@ float fftw_interface_theta_get_phase (struct fftw_interface_theta* fftw_int,
                                       struct timespec* elapsed_since_acquisition,
                                       float frequency);
 
-int fftw_interface_swr_init (struct fftw_interface_swr* fftw_int); // should have parameters to allow signal of different length to be treated
+int fftw_interface_swr_init (struct fftw_interface_swr* fftw_int, int sampling_rate_hz); // should have parameters to allow signal of different length to be treated
 int fftw_interface_swr_free (struct fftw_interface_swr* fftw_int);
 
 int fftw_interface_swr_differential_and_filter (struct fftw_interface_swr* fftw_int);

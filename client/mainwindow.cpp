@@ -76,6 +76,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->runIndicatorWidget->load(QStringLiteral(":/graphics/running.svg"));
 
     // set default values (which should trigger value-change slots to set the values on m_client)
+    ui->samplingRateSpinBox->setValue(200000);
     ui->trialDurationTimeEdit->setTime(QTime(0, 7, 0));
     ui->pulseDurationSpinBox->setValue(20);
     ui->laserIntensitySpinBox->setValue(2);
@@ -258,4 +259,9 @@ void MainWindow::on_thetaPhaseSpinBox_valueChanged(double arg1)
 void MainWindow::on_trainFrequencySpinBox_valueChanged(double arg1)
 {
     m_client->setTrainFrequency(arg1);
+}
+
+void MainWindow::on_samplingRateSpinBox_valueChanged(int arg1)
+{
+    m_client->setSamplingFrequency(arg1);
 }

@@ -37,10 +37,13 @@
  * Do train a stimulation at a given frequency or at random intervals
  */
 gboolean
-perform_train_stimulation (gboolean random, double trial_duration_sec, double pulse_duration_ms,
+perform_train_stimulation (gboolean random, int sampling_rate_hz, double trial_duration_sec, double pulse_duration_ms,
                            double minimum_interval_ms, double maximum_interval_ms, double train_frequency_hz)
 {
     TimeKeeper tk;
+
+    if (sampling_rate_hz <= 0)
+        sampling_rate_hz = LS_DEFAULT_SAMPLING_RATE;
 
     tk.trial_duration_sec = trial_duration_sec;
     tk.pulse_duration_ms = pulse_duration_ms;
@@ -128,7 +131,7 @@ perform_train_stimulation (gboolean random, double trial_duration_sec, double pu
  * Do the theta stimulation.
  */
 gboolean
-perform_theta_stimulation (gboolean random, double trial_duration_sec, double pulse_duration_ms, double stimulation_theta_phase,
+perform_theta_stimulation (gboolean random, int sampling_rate_hz, double trial_duration_sec, double pulse_duration_ms, double stimulation_theta_phase,
                            const gchar *offline_data_file, int channels_in_dat_file, int offline_channel)
 {
     TimeKeeper tk;
@@ -150,6 +153,8 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
 
     double max_phase_diff = MAX_PHASE_DIFFERENCE;
 
+    if (sampling_rate_hz <= 0)
+        sampling_rate_hz = LS_DEFAULT_SAMPLING_RATE;
 
     tk.trial_duration_sec = trial_duration_sec;
     tk.pulse_duration_ms = pulse_duration_ms;
@@ -163,10 +168,10 @@ perform_theta_stimulation (gboolean random, double trial_duration_sec, double pu
 
     /* configure ADC, run DAQ on CPU 0 */
     daq = gld_adc_new (LS_ADC_CHANNEL_COUNT, LS_DATA_BUFFER_SIZE, 0);
-    gld_adc_set_acq_frequency (daq, LS_DEFAULT_SAMPLING_RATE);
+    gld_adc_set_acq_frequency (daq, sampling_rate_hz);
     gld_adc_set_nodata_sleep_time (daq, gld_set_timespec_from_ms (SLEEP_WHEN_NO_NEW_DATA_MS));
 
-    if (fftw_interface_theta_init (&fftw_inter) == -1) {
+    if (fftw_interface_theta_init (&fftw_inter, sampling_rate_hz) == -1) {
         fprintf (stderr, "Could not initialize fftw_interface_theta\n");
         return FALSE;
     }
@@ -395,7 +400,7 @@ out:
  * Do swr stimulation
  */
 gboolean
-perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, double swr_refractory, double swr_power_threshold, double swr_convolution_peak_threshold,
+perform_swr_stimulation (int sampling_rate_hz, double trial_duration_sec, double pulse_duration_ms, double swr_refractory, double swr_power_threshold, double swr_convolution_peak_threshold,
                          gboolean delay_swr, double minimum_interval_ms, double maximum_interval_ms,
                          const gchar *offline_data_file, int channels_in_dat_file, int offline_channel, int offline_reference_channel)
 {
@@ -413,6 +418,9 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
     /* fftw SWR filtering structure */
     struct fftw_interface_swr fftw_inter_swr;
 
+    if (sampling_rate_hz <= 0)
+        sampling_rate_hz = LS_DEFAULT_SAMPLING_RATE;
+
     /* set up timekeeper */
     tk.trial_duration_sec = trial_duration_sec;
     tk.pulse_duration_ms = pulse_duration_ms;
@@ -423,11 +431,11 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
 
     /* create ADC interface and configure it, run DAQ on CPU 0 */
     daq = gld_adc_new (LS_ADC_CHANNEL_COUNT, LS_DATA_BUFFER_SIZE, 0);
-    gld_adc_set_acq_frequency (daq, LS_DEFAULT_SAMPLING_RATE);
+    gld_adc_set_acq_frequency (daq, sampling_rate_hz);
     gld_adc_set_nodata_sleep_time (daq, gld_set_timespec_from_ms (SLEEP_WHEN_NO_NEW_DATA_MS));
 
     /* initialize fftw interface */
-    if (fftw_interface_swr_init (&fftw_inter_swr) == -1) {
+    if (fftw_interface_swr_init (&fftw_inter_swr, sampling_rate_hz) == -1) {
         fprintf (stderr, "Could not initialize fftw_interface_swr\n");
         return FALSE;
     }
@@ -652,7 +660,7 @@ perform_swr_stimulation (double trial_duration_sec, double pulse_duration_ms, do
                     g_print ("%zu\n", last_sample_no);
 
                     // move forward in file by the duration of the pulse
-                    last_sample_no = last_sample_no + (tk.pulse_duration_ms * LS_DEFAULT_SAMPLING_RATE / 1000);
+                    last_sample_no = last_sample_no + (tk.pulse_duration_ms * sampling_rate_hz / 1000);
                 }
             }
         }

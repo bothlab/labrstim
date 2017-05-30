@@ -57,21 +57,15 @@ private slots:
     void on_trialDurationTimeEdit_timeChanged(const QTime &time);
     void on_pulseDurationSpinBox_valueChanged(double arg1);
     void on_laserIntensitySpinBox_valueChanged(double arg1);
+    void on_samplingRateSpinBox_valueChanged(int arg1);
 
     void on_randomIntervalCheckBox_toggled(bool checked);
-
     void on_minimumIntervalSpinBox_valueChanged(double arg1);
-
     void on_maximumIntervalSpinBox_valueChanged(double arg1);
-
     void on_swrRefractoryTimeSpinBox_valueChanged(double arg1);
-
     void on_swrPowerThresholdDoubleSpinBox_valueChanged(double arg1);
-
     void on_convolutionPeakThresholdSpinBox_valueChanged(double arg1);
-
     void on_thetaPhaseSpinBox_valueChanged(double arg1);
-
     void on_trainFrequencySpinBox_valueChanged(double arg1);
 
 private:

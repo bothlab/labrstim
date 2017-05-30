@@ -158,6 +158,7 @@ bool LabrstimClient::runStimulation()
             return false;
     }
 
+    command.append(QString(" %1").arg(m_samplingFrequency));
     command.append(QString(" %1").arg(m_trialDuration));
     command.append(QString(" %1").arg(m_pulseDuration));
     command.append(QString(" %1").arg(m_laserIntensity));
@@ -306,6 +307,11 @@ void LabrstimClient::setPulseDuration(double val)
 void LabrstimClient::setLaserIntensity(double val)
 {
     m_laserIntensity = val;
+}
+
+void LabrstimClient::setSamplingFrequency(int hz)
+{
+    m_samplingFrequency = hz;
 }
 
 void LabrstimClient::setRandomIntervals(bool random)

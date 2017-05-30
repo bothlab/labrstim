@@ -24,6 +24,7 @@
 
 gboolean
 perform_train_stimulation (gboolean random,
+                           int sampling_rate_hz,
                            double trial_duration_sec,
                            double pulse_duration_ms,
                            double minimum_interval_ms,
@@ -32,6 +33,7 @@ perform_train_stimulation (gboolean random,
 
 gboolean
 perform_theta_stimulation (gboolean random,
+                           int sampling_rate_hz,
                            double trial_duration_sec,
                            double pulse_duration_ms,
                            double stimulation_theta_phase,
@@ -40,7 +42,8 @@ perform_theta_stimulation (gboolean random,
                            int offline_channel);
 
 gboolean
-perform_swr_stimulation (double trial_duration_sec,
+perform_swr_stimulation (int sampling_rate_hz,
+                         double trial_duration_sec,
                          double pulse_duration_ms,
                          double swr_refractory,
                          double swr_power_threshold,

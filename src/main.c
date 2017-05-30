@@ -167,11 +167,12 @@ labrstim_option_context_parse (GOptionContext *opt_context, const gchar *subcomm
  * Obtain additional session parameters.
  */
 static gboolean
-labrstim_get_stim_parameters (char **argv, int argc, double *trial_duration_sec, double *pulse_duration_ms, double *laser_intensity_volt)
+labrstim_get_stim_parameters (char **argv, int argc, int *sampling_rate_hz, double *trial_duration_sec, double *pulse_duration_ms, double *laser_intensity)
 {
     double trial_dur_s;
     double pulse_dur_ms;
-    double laser_int_v;
+    double laser_int;
+    int    sample_freq;
 
     /* check if we have the required number of arguments */
     if (argc != 5) {
@@ -187,29 +188,36 @@ labrstim_get_stim_parameters (char **argv, int argc, double *trial_duration_sec,
     }
 
     /* parse the arguments from the command line */
-    trial_dur_s  = g_strtod (argv[2], NULL);
-    pulse_dur_ms = g_strtod (argv[3], NULL);
-    laser_int_v  = g_strtod (argv[4], NULL);
+    sample_freq  = g_ascii_strtoll (argv[2], NULL, 10);
+    trial_dur_s  = g_strtod (argv[3], NULL);
+    pulse_dur_ms = g_strtod (argv[4], NULL);
+    laser_int    = g_strtod (argv[5], NULL);
 
+    if (sample_freq <= 1000 || sample_freq > 200000) {
+        g_printerr ("Sampling frequency must be between 1000 and 200000.\nYou gave %i\n",
+                    sample_freq);
+        return FALSE;
+    }
     if (trial_dur_s <= 0 || trial_dur_s > 10000) {
-        g_printerr ("Trial duration should be between 0 and 10000 sec\nYou gave %lf\n",
+        g_printerr ("Trial duration should be between 0 and 10000 sec.\nYou gave %lf\n",
                     trial_dur_s);
         return FALSE;
     }
     if (pulse_dur_ms < 0 || pulse_dur_ms > 10000) {
-        g_printerr ("Pulse_duration_ms should be between 0 and 10000 ms\nYou gave %lf\n",
+        g_printerr ("Pulse_duration_ms should be between 0 and 10000 ms.\nYou gave %lf\n",
                     pulse_dur_ms);
         return FALSE;
     }
-    if (laser_int_v <= 0 || laser_int_v > 4) {
-        g_printerr ("Voltage to control laser power should be between 0 and 4 volt\nYou gave %lf\n",
-                    laser_int_v);
+    if (laser_int <= 0 || laser_int > 65535) {
+        g_printerr ("Laser power should be between 0 and 65535.\nYou gave %lf\n",
+                    laser_int);
         return FALSE;
     }
 
+    (*sampling_rate_hz)     = sample_freq;
     (*trial_duration_sec)   = trial_dur_s;
     (*pulse_duration_ms)    = pulse_dur_ms;
-    (*laser_intensity_volt) = laser_int_v;
+    (*laser_intensity)      = laser_int;
 
     return TRUE;
 }
@@ -225,6 +233,7 @@ labrstim_run_train (const gchar *command, char **argv, int argc)
     g_autoptr(GOptionContext) opt_context = NULL;
     gint ret;
 
+    int sampling_rate_hz;
     double trial_duration_sec;
     double pulse_duration_ms;
     double laser_intensity_volt;
@@ -248,7 +257,7 @@ labrstim_run_train (const gchar *command, char **argv, int argc)
     ret = labrstim_option_context_parse (opt_context, command, &argc, &argv);
     if (ret != 0)
         return ret;
-    if (!labrstim_get_stim_parameters (argv, argc, &trial_duration_sec, &pulse_duration_ms, &laser_intensity_volt))
+    if (!labrstim_get_stim_parameters (argv, argc, &sampling_rate_hz, &trial_duration_sec, &pulse_duration_ms, &laser_intensity_volt))
         return 1;
 
     /* train stimulation from an offline file doesn't make sense and is not supported */
@@ -260,6 +269,7 @@ labrstim_run_train (const gchar *command, char **argv, int argc)
     if (opt_dat_filename == NULL)
         stimpulse_set_intensity (laser_intensity_volt);
     perform_train_stimulation (opt_random,
+                               sampling_rate_hz,
                                trial_duration_sec,
                                pulse_duration_ms,
                                opt_minimum_interval_ms,
@@ -279,6 +289,7 @@ labrstim_run_theta (const gchar *command, char **argv, int argc)
     g_autoptr(GOptionContext) opt_context = NULL;
     gint ret;
 
+    int sampling_rate_hz;
     double trial_duration_sec;
     double pulse_duration_ms;
     double laser_intensity_volt;
@@ -300,7 +311,7 @@ labrstim_run_theta (const gchar *command, char **argv, int argc)
     ret = labrstim_option_context_parse (opt_context, command, &argc, &argv);
     if (ret != 0)
         return ret;
-    if (!labrstim_get_stim_parameters (argv, argc, &trial_duration_sec, &pulse_duration_ms, &laser_intensity_volt))
+    if (!labrstim_get_stim_parameters (argv, argc, &sampling_rate_hz, &trial_duration_sec, &pulse_duration_ms, &laser_intensity_volt))
         return 1;
 
     /* verify if parameters make sense */
@@ -313,6 +324,7 @@ labrstim_run_theta (const gchar *command, char **argv, int argc)
     if (opt_dat_filename == NULL)
         stimpulse_set_intensity (laser_intensity_volt);
     perform_theta_stimulation (opt_random,
+                               sampling_rate_hz,
                                trial_duration_sec,
                                pulse_duration_ms,
                                opt_stimulation_theta_phase,
@@ -333,6 +345,7 @@ labrstim_run_swr (const gchar *command, char **argv, int argc)
     g_autoptr(GOptionContext) opt_context = NULL;
     gint ret;
 
+    int sampling_rate_hz;
     double trial_duration_sec;
     double pulse_duration_ms;
     double laser_intensity_volt;
@@ -367,7 +380,7 @@ labrstim_run_swr (const gchar *command, char **argv, int argc)
     ret = labrstim_option_context_parse (opt_context, command, &argc, &argv);
     if (ret != 0)
         return ret;
-    if (!labrstim_get_stim_parameters (argv, argc, &trial_duration_sec, &pulse_duration_ms, &laser_intensity_volt))
+    if (!labrstim_get_stim_parameters (argv, argc, &sampling_rate_hz, &trial_duration_sec, &pulse_duration_ms, &laser_intensity_volt))
         return 3;
 
     /* check if parameters make sense */
@@ -409,7 +422,8 @@ labrstim_run_swr (const gchar *command, char **argv, int argc)
 
     if (opt_dat_filename == NULL)
         stimpulse_set_intensity (laser_intensity_volt);
-    perform_swr_stimulation (trial_duration_sec,
+    perform_swr_stimulation (sampling_rate_hz,
+                             trial_duration_sec,
                              pulse_duration_ms,
                              opt_swr_refractory,
                              opt_swr_power_threshold,

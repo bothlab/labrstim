@@ -47,6 +47,7 @@ public:
     void setTrialDuration(double val);
     void setPulseDuration(double val);
     void setLaserIntensity(double val);
+    void setSamplingFrequency(int hz);
 
     void setRandomIntervals(bool random);
     void setMinimumInterval(double min);
@@ -95,6 +96,7 @@ private:
 
     // stimulation settings
     Mode m_mode;
+    int m_samplingFrequency;
     double m_trialDuration;
     double m_pulseDuration;
     double m_laserIntensity;

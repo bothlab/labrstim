@@ -30,7 +30,7 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    connect(ui->applyButton, &QPushButton::clicked,
+    connect(ui->okButton, &QPushButton::clicked,
             this, &SettingsDialog::apply);
     connect(ui->serialPortInfoListBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
             this, &SettingsDialog::showPortInfo);
