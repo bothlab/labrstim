@@ -76,7 +76,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->runIndicatorWidget->load(QStringLiteral(":/graphics/running.svg"));
 
     // set default values (which should trigger value-change slots to set the values on m_client)
-    ui->samplingRateSpinBox->setValue(200000);
+    ui->samplingRateSpinBox->setValue(20000);
     ui->trialDurationTimeEdit->setTime(QTime(0, 7, 0));
     ui->pulseDurationSpinBox->setValue(20);
     ui->laserIntensitySpinBox->setValue(2);
