@@ -46,18 +46,17 @@
 
 /* defaults for SWR detection */
 #define FFT_SIGNAL_DATA_SIZE_SWR 1024 // number of data points that goes into the fft, needs to be a 2^x number
-#define REAL_DATA_IN_SEGMENT_TO_FFT_SWR 400 // the is the number of singal data point that will go in the fft
-                                                                                     // the rest will be filled with 0. window size
-                                                                                     //  should be a number smaller or equal  FFT_SIGNAL_DATA_SIZE_SWR
-#define DATA_IN_SEGMENT_TO_POWER_SWR 200 // this is the length of the segment on which the power detection is based on.
-                                                                                 // should not be larger than REAL_DATA_IN_SEGMENT_TO_FFT_SWR
+#define REAL_DATA_IN_SEGMENT_TO_FFT_SWR 512 // the is the number of singal data point that will go in the fft
+                                            // the rest will be filled with 0. window size
+                                            // should be a number smaller or equal  FFT_SIGNAL_DATA_SIZE_SWR
+#define DATA_IN_SEGMENT_TO_POWER_SWR 256 // this is the length of the segment on which the power detection is based on.
+                                         // should not be larger than REAL_DATA_IN_SEGMENT_TO_FFT_SWR
 
 #define MIN_FREQUENCY_SWR 125 // default minimum frequency for ripple detection
 #define MAX_FREQUENCY_SWR 250 // default maximum frequency for ripple detection
 #define FREQUENCY_WAVELET_FOR_CONVOLUTION 160
 #define SLEEP_WHEN_NO_NEW_DATA_MS 0.2  // 0.2 is ok, probably best not to change that
-#define NUMBER_SAMPLED_CHANNEL_DEVICE_0 64 // 64 is ok if your card has 64 channels, will return new data more often the larger the number
-#define INTERVAL_DURATION_BETWEEN_SWR_PROCESSING_MS 5 // the program will sleep 5 ms between each calculation of ripple power
+#define INTERVAL_DURATION_BETWEEN_SWR_PROCESSING_MS 4 // the program will sleep 4 ms between each calculation of ripple power
 #define SIZE_ROOT_MEAN_SQUARE_ARRAY 10000
 
 /* RT process defaults */
