@@ -175,15 +175,16 @@ labrstim_get_stim_parameters (char **argv, int argc, int *sampling_rate_hz, doub
     int    sample_freq;
 
     /* check if we have the required number of arguments */
-    if (argc != 5) {
+    if (argc != 6) {
         gint i;
         g_printerr ("Usage for %s is \n", APP_NAME);
-        g_printerr ("%s %s [trial duration (sec)] [pulse duration (ms)] [laser intensity (volts)]\n", argv[0], argv[1]);
-        g_printerr ("You need %d arguments but gave %d arguments: \n",
-                 3, argc - 2);
+        g_printerr ("%s %s [sampling frequency (Hz)] [trial duration (sec)] [pulse duration (ms)] [laser intensity]\n", argv[0], argv[1]);
+        g_printerr ("You need %d arguments but gave %d arguments:",
+                 4, argc - 2);
         for (i = 2; i < argc; i++) {
-            g_printerr ("%s\n", argv[i]);
+            g_printerr (" %s", argv[i]);
         }
+        g_printerr ("\n");
         return FALSE;
     }
 
