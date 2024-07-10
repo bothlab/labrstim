@@ -1,5 +1,4 @@
 option('maintainer', type : 'boolean', value: false)
-option('optimize', type : 'boolean', value: true)
 
 option('guiclient', type : 'boolean', value: false)
 option('device', type : 'boolean', value: true)

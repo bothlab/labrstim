@@ -65,11 +65,6 @@ if (get_option('maintainer'))
     add_global_arguments(['-Werror', '-Wall', '-Wextra'], language: 'c')
 endif
 
-if (get_option('optimize'))
-    # we optimize as much as possible if this option is set
-    add_global_arguments(['-O3', '-march=native'], language: 'c')
-endif
-
 #
 # Subdirs
 #

@@ -44,36 +44,59 @@ configure_file(input: '../config.h.in',
 
 add_global_arguments(['-D_GNU_SOURCE'], language: 'c')
 
+galdur_c_args = ['-O3']
+if target_machine.cpu_family() == 'aarch64'
+    message('Optimizing device binaries for RPi3')
+    # tuning flags for the RPi3b, and build device code for ARM64
+    galdur_c_args += [
+        '-march=armv8-a+crc',
+        '-mtune=cortex-a53',
+    ]
+else
+    message('No optimizing device binaries for RPi3')
+endif
+
 #
 # Targets
 #
-galdur_lib = static_library('galdur',
-           [galdur_src],
-           dependencies: [thread_dep,
-                          glib_dep,
-                          math_lib],
-           c_args: ['-Wall',  '-O3', '-nostartfiles', '-ffreestanding']
+galdur_lib = static_library(
+    'galdur',
+    [galdur_src],
+    dependencies: [thread_dep,
+                   glib_dep,
+                   math_lib
+    ],
+    c_args: ['-Wall',
+             galdur_c_args,
+             '-nostartfiles',
+             '-ffreestanding'
+    ]
 )
-galdur_dep = declare_dependency(link_with: galdur_lib,
-                                include_directories: include_directories('.'),
-                                dependencies: [glib_dep, thread_dep]
+galdur_dep = declare_dependency(
+    link_with: galdur_lib,
+    include_directories: include_directories('.'),
+    dependencies: [glib_dep, thread_dep]
 )
 
 executable('galdur-adc',
            ['tools/galdur-adc.c'],
-           dependencies: [galdur_dep]
+           dependencies: [galdur_dep],
+           c_args: [galdur_c_args],
 )
 executable('galdur-blink',
            ['tools/galdur-blink.c'],
-           dependencies: [galdur_dep]
+           dependencies: [galdur_dep],
+           c_args: [galdur_c_args],
 )
 executable('galdur-dac',
            ['tools/galdur-dac.c'],
-           dependencies: [galdur_dep]
+           dependencies: [galdur_dep],
+           c_args: [galdur_c_args],
 )
 executable('galdur-io',
            ['tools/galdur-io.c'],
-           dependencies: [galdur_dep]
+           dependencies: [galdur_dep],
+           c_args: [galdur_c_args],
 )
 
 #
@@ -84,5 +107,6 @@ executable('test-maxdaq',
             'tests/test-maxdaq.c'],
            dependencies: [thread_dep,
                           glib_dep,
-                          math_lib]
+                          math_lib],
+           c_args: [galdur_c_args],
 )
