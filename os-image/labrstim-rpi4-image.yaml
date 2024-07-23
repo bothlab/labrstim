@@ -23,12 +23,15 @@ actions:
     description: Install extra packages
     packages:
       - adduser
+      - sudo
       - ca-certificates
       - i2c-tools
-      - sudo
       - systemd-sysv
       - systemd-resolved
       - systemd-timesyncd
+      - f2fs-tools
+      - locales
+      - kmod
       - zstd
       - less
       - nano
@@ -37,6 +40,11 @@ actions:
   - action: overlay
     description: Install kernel modules
     source: overlays/linux-root
+
+  - action: run
+    description: Set up locale
+    chroot: true
+    script: scripts/setup-locale.sh
 
   - action: run
     description: Set up user
@@ -111,6 +119,20 @@ actions:
 ##########
 #
 
+  # configure services
+  - action: run
+    chroot: true
+    command: systemctl disable apt-daily-upgrade.timer && systemctl disable apt-daily.timer && systemctl disable dpkg-db-backup.timer
+  - action: run
+    chroot: true
+    command: systemctl disable systemd-networkd.service && systemctl disable systemd-networkd-wait-online.service
+  - action: run
+    chroot: true
+    command: systemctl disable e2scrub_all.timer
+  - action: run
+    chroot: true
+    command: systemctl mask serial-getty@ttyAMA0.service
+
   # Kernel modules config
   - action: overlay
     description: Copy modprobe.d config
@@ -146,17 +168,18 @@ actions:
     partitiontype: msdos
     mountpoints:
       - mountpoint: /
-        partition: root
+        partition: rootfs
+        options: [ noatime,nodiratime,discard,lazytime ]
       - mountpoint: /boot/firmware
-        partition: firmware
+        partition: fwboot
         options: [ x-systemd.automount ]
     partitions:
-      - name: firmware
+      - name: fwboot
         fs: fat32
         start: 0%
         end: 128MB
-      - name: root
-        fs: ext4
+      - name: rootfs
+        fs: f2fs
         start: 128MB
         end: 100%
         flags: [ boot ]

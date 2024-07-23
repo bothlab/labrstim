@@ -6,8 +6,8 @@ cd $BASEDIR
 
 set -x
 rm -rf linux/
-rm -rf overlays/linux-root/
 rm -rf overlays/labrstim/
+rm -rf overlays/linux-root/lib/modules/
 
 rm -f overlays/fw-boot/*.dtb
 rm -f overlays/fw-boot/*.img
