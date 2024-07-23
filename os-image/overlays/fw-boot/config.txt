@@ -1,0 +1,63 @@
+# Run in 64-bit mode
+arm_64bit=1
+
+# Enable UART for USB serial connection
+#enable_uart=1
+#uart_2ndstage=1
+
+# Disable compensation for displays with overscan
+disable_overscan=1
+
+# Run as fast as firmware / board allows
+#arm_boost=1
+
+# Automatically load overlays for detected DSI displays
+display_auto_detect=1
+
+# Automatically load initramfs files, if found
+auto_initramfs=1
+
+# Enable DRM VC4 V3D driver
+dtoverlay=vc4-kms-v3d
+max_framebuffers=2
+
+# Don't have the firmware create an initial video= setting in cmdline.txt.
+# Use the kernel's default instead.
+disable_fw_kms_setup=1
+
+# Enable audio (loads snd_bcm2835)
+#dtparam=audio=on
+
+# Enable i2c for hwclock communication
+dtparam=i2c_arm=on
+dtparam=i2c1=on
+#dtparam=i2s=on
+
+# Enable SPI 0
+dtparam=spi=on
+
+# Enable aux SPI 1
+dtoverlay=spi1-3cs
+
+# Labrstim Galdur board
+#dtoverlay=labrstim
+
+# realtime clock (on Galdur board)
+dtoverlay=i2c-rtc,ds1307
+
+# Disable Bluetooth
+dtoverlay=miniuart-bt
+#dtoverlay=disable-bt
+
+dtoverlay=spi1-1cs
+
+[cm4]
+# Enable host mode on the 2711 built-in XHCI USB controller.
+# This line should be removed if the legacy DWC2 controller is required
+# (e.g. for USB device mode) or if USB support is not required.
+otg_mode=1
+
+[cm5]
+dtoverlay=dwc2,dr_mode=host
+
+[all]

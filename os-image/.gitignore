@@ -1,0 +1,14 @@
+linux/
+gcc-tc/
+overlays/linux-root/
+overlays/labrstim/
+
+overlays/fw-boot/*.dtb
+overlays/fw-boot/*.img
+overlays/fw-boot/overlays/*.dtbo
+overlays/fw-boot/overlays/README
+
+labrstim-rpi*.img.gz
+labrstim-rpi*.img.bmap
+
+orig-boot-backup/

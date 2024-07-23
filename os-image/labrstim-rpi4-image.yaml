@@ -1,0 +1,175 @@
+{{- $mirror := or .mirror "http://deb.debian.org/debian" -}}
+{{- $suite := or .suite "bookworm" -}}
+{{- $firmware_version := or .firmware_version "1.20240529" -}}
+{{- $image := or .image "labrstim-rpi4.img" -}}
+
+architecture: arm64
+
+actions:
+  - action: download
+    url: https://github.com/raspberrypi/firmware/archive/{{ $firmware_version }}.tar.gz
+    unpack: true
+    name: firmware
+
+  - action: debootstrap
+    suite: {{ $suite }}
+    components:
+      - main
+      - non-free-firmware
+    mirror: {{ $mirror }}
+    variant: minbase
+
+  - action: apt
+    description: Install extra packages
+    packages:
+      - adduser
+      - ca-certificates
+      - i2c-tools
+      - sudo
+      - systemd-sysv
+      - systemd-resolved
+      - systemd-timesyncd
+      - zstd
+      - less
+      - nano
+      - btop
+
+  - action: overlay
+    description: Install kernel modules
+    source: overlays/linux-root
+
+  - action: run
+    description: Set up user
+    chroot: true
+    script: scripts/setup-user.sh
+
+  - action: run
+    description: Add hostname
+    chroot: true
+    command: echo galdur > /etc/hostname
+
+  - action: overlay
+    description: Autoload modules
+    source: overlays/modules
+
+  - action: overlay
+    source: overlays/networkd
+
+  - action: run
+    chroot: true
+    script: scripts/setup-networking.sh
+
+  # add firmware
+  - action: overlay
+    origin: firmware
+    source: firmware-{{ $firmware_version }}/boot
+    destination: /boot/firmware
+
+  - action: run
+    chroot: true
+    command: rm -rf /boot/firmware/kernel*.img /boot/firmware/*.dtb /boot/overlays/*.dtbo /boot/firmware/overlays
+
+  - action: overlay
+    description: Copy DT overlays and config
+    source: overlays/fw-boot/
+    destination: /boot/firmware/
+
+#
+# Build & Setup LaBrStim Service
+#
+
+  - action: apt
+    description: Install stimulator build dependencies
+    packages:
+      - gcc
+      - g++
+      - libfftw3-dev
+      - libglib2.0-dev
+      - libsystemd-dev
+      - meson
+      - ninja-build
+
+  - action: run
+    chroot: true
+    command: mkdir -p /srv/build/labrstim
+  - action: overlay
+    description: Copy sources
+    source: overlays/labrstim
+    destination: /srv/build/labrstim
+
+  - action: run
+    description: Build & Install Labrstim
+    chroot: true
+    script: scripts/build-labrstim.sh
+
+  - action: run
+    description: Enable LaBrStim Service
+    chroot: true
+    command: systemctl enable labrstim-ttyctl
+
+#
+##########
+#
+
+  # Kernel modules config
+  - action: overlay
+    description: Copy modprobe.d config
+    source: overlays/modprobe.d/
+    destination: /etc/modprobe.d/
+
+  # Configure user autologin
+  - action: run
+    chroot: true
+    command: mkdir -p /etc/systemd/system/getty@tty1.service.d/
+  - action: overlay
+    description: Copy Getty config
+    source: overlays/getty/
+    destination: /etc/systemd/system/getty@tty1.service.d/
+
+  - action: overlay
+    description: Copy Sudoers.d config
+    source: overlays/sudoers.d/
+    destination: /etc/sudoers.d/
+  - action: run
+    chroot: true
+    command: chmod 0440 /etc/sudoers.d/user-journalctl
+
+  # Configure user home contents
+  - action: overlay
+    description: Copy Getty config
+    source: overlays/userhome/
+    destination: /home/user/
+
+  - action: image-partition
+    imagename: {{ $image }}
+    imagesize: 4GB
+    partitiontype: msdos
+    mountpoints:
+      - mountpoint: /
+        partition: root
+      - mountpoint: /boot/firmware
+        partition: firmware
+        options: [ x-systemd.automount ]
+    partitions:
+      - name: firmware
+        fs: fat32
+        start: 0%
+        end: 128MB
+      - name: root
+        fs: ext4
+        start: 128MB
+        end: 100%
+        flags: [ boot ]
+
+  - action: filesystem-deploy
+    description: Deploying filesystem onto image
+
+  - action: run
+    description: Create block map file
+    postprocess: true
+    command: bmaptool create {{ $image }} > {{ $image }}.bmap
+
+  - action: run
+    description: Compressing final image
+    postprocess: true
+    command: gzip -f {{ $image }}

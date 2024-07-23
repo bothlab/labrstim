@@ -46,14 +46,14 @@ add_global_arguments(['-D_GNU_SOURCE'], language: 'c')
 
 galdur_c_args = ['-O3']
 if target_machine.cpu_family() == 'aarch64'
-    message('Optimizing device binaries for RPi3')
-    # tuning flags for the RPi3b, and build device code for ARM64
+    message('Optimizing device binaries for RPi4')
+    # tuning flags for the RPi4, and build device code for ARM64
     galdur_c_args += [
         '-march=armv8-a+crc',
-        '-mtune=cortex-a53',
+        '-mtune=cortex-a72',
     ]
 else
-    message('No optimizing device binaries for RPi3')
+    message('No optimizing device binaries for RPi4')
 endif
 
 #
