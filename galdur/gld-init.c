@@ -48,6 +48,12 @@ gld_cpu_is_valid (void)
             }
 
             g_debug ("CPU Hardware: %s", line);
+        } else if (g_str_has_prefix (line, "Model")) {
+            g_debug ("Running on: %s", line);
+            if (g_strrstr (line, "Raspberry Pi 4 ") != NULL) {
+                ret = TRUE;
+                goto out;
+            }
         }
     }
 
