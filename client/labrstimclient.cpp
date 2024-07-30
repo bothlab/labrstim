@@ -158,11 +158,6 @@ bool LabrstimClient::runStimulation()
             return false;
     }
 
-    command.append(QString(" %1").arg(m_samplingFrequency));
-    command.append(QString(" %1").arg(m_trialDuration));
-    command.append(QString(" %1").arg(m_pulseDuration));
-    command.append(QString(" %1").arg(m_laserIntensity));
-
     // SWR-specific settings
     if (m_mode == ModeSwr) {
         if (m_swrRefractoryTime != 0)
@@ -189,9 +184,14 @@ bool LabrstimClient::runStimulation()
         command.append(QString(" -M %1").arg(m_maximumInterval));
     }
 
+    command.append(QString(" %1").arg(m_samplingFrequency));
+    command.append(QString(" %1").arg(m_trialDuration));
+    command.append(QString(" %1").arg(m_pulseDuration));
+    command.append(QString(" %1").arg(m_laserIntensity));
+
     auto res = sendRequest(command);
     if (res != "OK") {
-        emitError(QStringLiteral("Unable to start stimulation."));
+        emitError(QStringLiteral("Unable to start stimulation. [%1]").arg(res));
         return false;
     }
 

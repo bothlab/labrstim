@@ -74,7 +74,7 @@ gboolean
 gld_board_initialize (void)
 {
     if (!gld_cpu_is_valid ()) {
-        g_error ("You are not running on the right BCM-2835 or compatible CPU. This tool currently only works on a Raspberry Pi 3.");
+        g_error ("You are not running on the right BCM-2835 or compatible CPU. This tool currently only works on a Raspberry Pi 4.");
         return FALSE;
     }
 

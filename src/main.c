@@ -238,6 +238,7 @@ labrstim_run_train (const gchar *command, char **argv, int argc)
     double trial_duration_sec;
     double pulse_duration_ms;
     double laser_intensity_volt;
+    gboolean success;
 
     static double   opt_train_frequency_hz = 6;
     static gboolean opt_random = FALSE;
@@ -269,13 +270,16 @@ labrstim_run_train (const gchar *command, char **argv, int argc)
 
     if (opt_dat_filename == NULL)
         stimpulse_set_intensity (laser_intensity_volt);
-    perform_train_stimulation (opt_random,
-                               sampling_rate_hz,
-                               trial_duration_sec,
-                               pulse_duration_ms,
-                               opt_minimum_interval_ms,
-                               opt_maximum_interval_ms,
-                               opt_train_frequency_hz);
+    success = perform_train_stimulation (opt_random,
+                                         sampling_rate_hz,
+                                         trial_duration_sec,
+                                         pulse_duration_ms,
+                                         opt_minimum_interval_ms,
+                                         opt_maximum_interval_ms,
+                                         opt_train_frequency_hz);
+    if (!success)
+        return 5;
+
     return 0;
 }
 
@@ -289,6 +293,7 @@ labrstim_run_theta (const gchar *command, char **argv, int argc)
 {
     g_autoptr(GOptionContext) opt_context = NULL;
     gint ret;
+    gboolean success;
 
     int sampling_rate_hz;
     double trial_duration_sec;
@@ -324,14 +329,17 @@ labrstim_run_theta (const gchar *command, char **argv, int argc)
 
     if (opt_dat_filename == NULL)
         stimpulse_set_intensity (laser_intensity_volt);
-    perform_theta_stimulation (opt_random,
-                               sampling_rate_hz,
-                               trial_duration_sec,
-                               pulse_duration_ms,
-                               opt_stimulation_theta_phase,
-                               opt_dat_filename,
-                               opt_channels_in_dat_file,
-                               opt_offline_channel);
+    success = perform_theta_stimulation (opt_random,
+                                         sampling_rate_hz,
+                                         trial_duration_sec,
+                                         pulse_duration_ms,
+                                         opt_stimulation_theta_phase,
+                                         opt_dat_filename,
+                                         opt_channels_in_dat_file,
+                                         opt_offline_channel);
+    if (!success)
+        return 5;
+
     return 0;
 }
 
@@ -345,6 +353,7 @@ labrstim_run_swr (const gchar *command, char **argv, int argc)
 {
     g_autoptr(GOptionContext) opt_context = NULL;
     gint ret;
+    gboolean success;
 
     int sampling_rate_hz;
     double trial_duration_sec;
@@ -423,19 +432,22 @@ labrstim_run_swr (const gchar *command, char **argv, int argc)
 
     if (opt_dat_filename == NULL)
         stimpulse_set_intensity (laser_intensity_volt);
-    perform_swr_stimulation (sampling_rate_hz,
-                             trial_duration_sec,
-                             pulse_duration_ms,
-                             opt_swr_refractory,
-                             opt_swr_power_threshold,
-                             opt_swr_convolution_peak_threshold,
-                             opt_delay_swr,
-                             opt_minimum_interval_ms,
-                             opt_maximum_interval_ms,
-                             opt_dat_filename,
-                             opt_channels_in_dat_file,
-                             opt_offline_channel,
-                             opt_swr_offline_reference);
+    success = perform_swr_stimulation (sampling_rate_hz,
+                                       trial_duration_sec,
+                                       pulse_duration_ms,
+                                       opt_swr_refractory,
+                                       opt_swr_power_threshold,
+                                       opt_swr_convolution_peak_threshold,
+                                       opt_delay_swr,
+                                       opt_minimum_interval_ms,
+                                       opt_maximum_interval_ms,
+                                       opt_dat_filename,
+                                       opt_channels_in_dat_file,
+                                       opt_offline_channel,
+                                       opt_swr_offline_reference);
+    if (!success)
+        return 5;
+
     return 0;
 }
 
