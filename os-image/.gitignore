@@ -11,4 +11,4 @@ overlays/fw-boot/overlays/README
 labrstim-rpi*.img.gz
 labrstim-rpi*.img.bmap
 
-orig-boot-backup/
+old-device-backup/
