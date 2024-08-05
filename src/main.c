@@ -175,6 +175,21 @@ labrstim_get_stim_parameters (char **argv, int argc, int *sampling_rate_hz, doub
     double laser_int;
     int    sample_freq;
 
+    /* strip the "--" positional arguments separator */
+    for (guint i = 0; i < argc; i++) {
+        if (g_strcmp0 (argv[i], "--") == 0) {
+            guint j;
+
+            /* shift elements to the left */
+            for (j = i; j < argc - 1; j++)
+                argv[j] = argv[j + 1];
+
+            argv[j] = NULL;
+            argc--;
+            break;
+        }
+    }
+
     /* check if we have the required number of arguments */
     if (argc != 6) {
         gint i;
