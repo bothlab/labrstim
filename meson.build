@@ -1,6 +1,6 @@
 project('Laser Brain Stimulator', 'c')
 
-labrstim_version = '0.1'
+labrstim_version = '0.2'
 labrstim_copyright = 'Kevin Allen <allen@uni-heidelberg.de> | Matthias Klumpp <matthias@tenstral.net>'
 
 compiler = meson.get_compiler('c')
