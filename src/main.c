@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <float.h>
 #include <galdur.h>
 
 #include "defaults.h"
@@ -199,11 +200,13 @@ labrstim_get_stim_parameters (char **argv, int argc, int *sampling_rate_hz, doub
                     sample_freq);
         return FALSE;
     }
-    if (trial_dur_s <= 0 || trial_dur_s > 10000) {
-        g_printerr ("Trial duration should be between 0 and 10000 sec.\nYou gave %lf\n",
+    if (trial_dur_s <= -2 || trial_dur_s > 86400) {
+        g_printerr ("Trial duration should be between 0 and 86400 sec, or -1 for infinite.\nYou gave %lf\n",
                     trial_dur_s);
         return FALSE;
     }
+    if (trial_dur_s < 0)
+        trial_dur_s = DBL_MAX;
     if (pulse_dur_ms < 0 || pulse_dur_ms > 10000) {
         g_printerr ("Pulse_duration_ms should be between 0 and 10000 ms.\nYou gave %lf\n",
                     pulse_dur_ms);
