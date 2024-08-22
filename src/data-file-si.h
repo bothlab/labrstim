@@ -24,7 +24,7 @@
 #include <sys/types.h>
 
 /**
- *data_file_si:
+ * data_file_si:
  *
  * structure to read dat files
  */
