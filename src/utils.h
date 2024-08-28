@@ -71,6 +71,8 @@ typedef struct
     // double nano_comp_ms=NANOSLEEP_OVERSHOOT;
 } TimeKeeper;
 
+gboolean labrstim_make_realtime (const gchar *app_name);
+
 #ifdef DEBUG
  #define ls_debug(fmt, args...) g_print("DEBUG: %s:%d: " fmt, \
                                     __FILE__, __LINE__, ##args)

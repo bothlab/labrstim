@@ -16,6 +16,7 @@ message('This program will only run on Raspberry Pi 3 hardware with the Galdur b
 #
 # Dependencies
 #
+
 fftw3_dep  = dependency('fftw3f') # single-precision fftw
 thread_dep = dependency('threads')
 glib_dep = dependency('glib-2.0')

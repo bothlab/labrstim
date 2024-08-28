@@ -28,10 +28,11 @@ struct timespec gld_set_timespec_from_ms (double milisec);
 struct timespec gld_time_diff (struct timespec* start,
                       struct timespec* end);
 
-int     gld_microsecond_from_timespec (struct timespec* duration);
+int64_t     gld_microsecond_from_timespec (struct timespec* duration);
+int64_t     gld_milliseconds_from_timespec (struct timespec* duration);
 
-int     gld_set_thread_cpu_affinity (int cpu_id);
-int     gld_set_thread_no_cpu_affinity (int cpu_id);
+int         gld_set_thread_cpu_affinity (int cpu_id);
+int         gld_set_thread_no_cpu_affinity (int cpu_id);
 
 #ifdef DEBUG
  #define gld_debug(fmt, args...) g_print("DEBUG: %s:%d: " fmt, \

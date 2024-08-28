@@ -62,13 +62,22 @@ gld_time_diff (struct timespec* start, struct timespec* end)
 /**
  * microsecond_from_timespec:
  */
-int
+int64_t
 gld_microsecond_from_timespec (struct timespec* duration)
 {
-    int ms;
-    ms = duration->tv_nsec / 1000;
+    time_t us = (duration->tv_sec*1000*1000) + duration->tv_nsec / 1000;
 
-    //  ms=ms+duration.tv_sec*1000;
+    return us;
+}
+
+/**
+ * gld_milliseconds_from_timespec:
+ */
+int64_t
+gld_milliseconds_from_timespec (struct timespec* duration)
+{
+    time_t ms = (duration->tv_sec*1000) + duration->tv_nsec / 1000 / 1000;
+
     return ms;
 }
 

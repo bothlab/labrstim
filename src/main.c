@@ -23,13 +23,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/mman.h>
 #include <float.h>
 #include <galdur.h>
 
 #include "defaults.h"
 #include "tasks.h"
 #include "stimpulse.h"
+#include "utils.h"
 
 /* misc */
 #define APP_NAME "labrstim"
@@ -482,42 +482,6 @@ labrstim_init_random_seed (void)
 }
 
 /**
- * labrstim_make_realtime:
- *
- * Declare the program as a reat time program
- * (the user will need to be root to do this)
- */
-static gboolean
-labrstim_make_realtime (void)
-{
-    /* set scheduler policy */
-    struct sched_param param;
-    param.sched_priority = LS_PRIORITY;
-    if (sched_setscheduler (0, SCHED_FIFO, &param) == -1) {
-        g_printerr ("%s : sched_setscheduler failed\n", APP_NAME);
-        g_printerr ("Do you have permission to run real-time applications? You might need to be root or use sudo\n");
-        return FALSE;
-    }
-
-    /* ensure the main thread does never run on the DAQ core */
-    if (gld_set_thread_no_cpu_affinity (0) < 0) {
-        g_printerr ("Unable to set CPU core affinity.");
-        return FALSE;
-    }
-
-    /* lock memory */
-    if (mlockall (MCL_CURRENT | MCL_FUTURE) == -1) {
-        g_printerr ("%s: mlockall failed", APP_NAME);
-        return FALSE;
-    }
-    /* pre-fault our stack */
-    unsigned char dummy[MAX_SAFE_STACK];
-    memset (&dummy, 0, MAX_SAFE_STACK);
-
-    return TRUE;
-}
-
-/**
  * labrstim_get_summary:
  **/
 static gchar*
@@ -589,6 +553,30 @@ main (int argc, char *argv[])
         g_option_context_set_help_enabled (opt_context, FALSE);
     g_option_context_set_ignore_unknown_options (opt_context, TRUE);
 
+    /* check if we need to call the spikedetect executable instead */
+    if (g_strcmp0 (command, "spikedetect") == 0) {
+        g_autofree gchar *exe_dir = NULL;
+        g_autofree gchar *spikedetect_exe = NULL;
+
+        exe_dir = g_path_get_dirname(argv[0]);
+        spikedetect_exe = g_build_filename (exe_dir, "spikedetect", "labrstim-spikedetect", NULL);
+        if (!g_file_test (spikedetect_exe, G_FILE_TEST_EXISTS)) {
+            g_free (spikedetect_exe);
+            spikedetect_exe = g_find_program_in_path("labrstim-spikedetect");
+        }
+
+        /* exec spikedetect program wit the same arguments passed to us */
+        if (spikedetect_exe != NULL) {
+            argv[1] = spikedetect_exe;
+            execv (spikedetect_exe, argv + 1);
+            g_printerr ("Failed to execute spikedetect executable: %s\n", spikedetect_exe);
+            return 1;
+        } else {
+            g_printerr ("Failed to find spikedetect executable in the PATH or in the same directory as labrstim.\n");
+            return 1;
+        }
+    }
+
     /* parse our options */
     g_option_context_add_main_entries (opt_context, base_options, NULL);
     g_option_context_add_main_entries (opt_context, generic_option_entries, NULL);
@@ -610,15 +598,13 @@ main (int argc, char *argv[])
 
     if (opt_dat_filename == NULL) {
         /* give the program realtime priority if we are not running from an offline file */
-        if (!labrstim_make_realtime ())
+        if (!labrstim_make_realtime (APP_NAME))
             return 5;
 
         /* initialize DAQ board */
         if (!gld_board_initialize ())
             return 5;
     }
-
-
 
     /* set a random seed based on the time we launched */
     labrstim_init_random_seed ();
