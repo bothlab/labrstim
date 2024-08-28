@@ -15,6 +15,6 @@ executable('labrstim-spikedetect',
                     galdur_dep,
                     math_lib],
      c_args: device_tune_args,
-     cpp_args: device_tune_args,
+     cpp_args: [device_tune_args],
      install: true,
 )

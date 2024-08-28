@@ -33,6 +33,7 @@ actions:
       - locales
       - kmod
       - zstd
+      - procps
       - less
       - nano
       - btop
@@ -96,6 +97,9 @@ actions:
       - libsystemd-dev
       - meson
       - ninja-build
+      - git
+      - cmake
+      - clang
 
   - action: run
     chroot: true
@@ -106,6 +110,11 @@ actions:
     destination: /srv/build/labrstim
 
   - action: run
+    description: Build & Install KFR
+    chroot: true
+    script: scripts/build-kfr.sh
+
+  - action: run
     description: Build & Install Labrstim
     chroot: true
     script: scripts/build-labrstim.sh
@@ -114,6 +123,11 @@ actions:
     description: Enable LaBrStim Service
     chroot: true
     command: systemctl enable labrstim-ttyctl
+
+  - action: run
+    description: Package cleanup
+    chroot: true
+    command: apt-get purge -y git cmake clang && apt-get autoremove -y
 
 #
 ##########

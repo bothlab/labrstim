@@ -1,5 +1,7 @@
 project('Laser Brain Stimulator',
         ['c', 'cpp'],
+        default_options : ['c_std=gnu11',
+                           'cpp_std=c++17'],
         license: 'GPL-3.0+',
         version: '0.2',
 )
@@ -8,8 +10,6 @@ labrstim_version = meson.project_version()
 labrstim_copyright = 'Kevin Allen <allen@uni-heidelberg.de> | Matthias Klumpp <matthias@tenstral.net>'
 
 compiler = meson.get_compiler('c')
-
-add_project_arguments('-std=gnu11', language: 'c')
 
 message('This program will only run on Raspberry Pi 3 hardware with the Galdur board.')
 
