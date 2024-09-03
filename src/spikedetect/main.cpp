@@ -43,12 +43,12 @@ private:
     uint m_eventCount;
     uint64_t m_lastTimestampMs;
 
-    int64_t fakeTimestampMs;
+    int64_t m_pinnedTimestampMs;
 
     uint64_t currentTimestampMs() const
     {
-        if (fakeTimestampMs >= 0)
-            return fakeTimestampMs;
+        if (m_pinnedTimestampMs >= 0)
+            return m_pinnedTimestampMs;
         else
             return std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now())
                 .time_since_epoch()
@@ -87,14 +87,14 @@ public:
           m_currentIndex(0),
           m_eventCount(0),
           m_lastTimestampMs(0),
-          fakeTimestampMs(-1)
+          m_pinnedTimestampMs(-1)
     {
         m_buffer.resize(m_windowSizeMs, false);
     }
 
-    void setFakeTimestamp(int64_t timestampMs)
+    void setPinnedTimestampMs(int64_t timestampMs)
     {
-        fakeTimestampMs = timestampMs;
+        m_pinnedTimestampMs = timestampMs;
     }
 
     void addEvent()
@@ -195,20 +195,19 @@ static bool run_spikedetect(
     clock_gettime(CLOCK_REALTIME, &tk.time_last_stimulation);
     tk.elapsed_beginning_trial = gld_time_diff(&tk.time_beginning_trial, &tk.time_now);
 
-    // initialize the stimulation output
-    if (!offlineDataFile)
+    if (!offlineDataFile) {
+        // initialize the stimulation output
         stimpulse_init();
 
-    ls_debug("Start trial loop\n");
-
-    if (!offlineDataFile) {
-        /* acquire data */
+        // acquire data
         if (!gld_adc_acquire_samples(daq, -1)) {
-            fprintf(stderr, "Unable to acquire samples, swr stimulation not possible\n");
+            fprintf(stderr, "Unable to acquire samples, spike stimulation not possible\n");
             gld_adc_free(daq);
             return false;
         }
     }
+
+    ls_debug("Start trial loop\n");
 
     // create a FIR bandpass filter with 127 taps
     kfr::univector<double, 127> taps127;
@@ -230,17 +229,18 @@ static bool run_spikedetect(
 
         if (offlineDataFile == nullptr) {
             // get fixed size of samples from the data buffer
-            gld_adc_get_samples_double(daq, LS_SCAN_CHAN, &samples[0], CHUNK_SIZE);
+            gld_adc_get_samples_double(daq, LS_SCAN_CHAN, samples, CHUNK_SIZE);
 
             // set time when the last sample was acquired
             clock_gettime(CLOCK_REALTIME, &tk.time_last_acquired_data);
+            peakCounter.setPinnedTimestampMs(gld_milliseconds_from_timespec(&tk.time_last_acquired_data));
         } else {
             if (offlineDataIndex + CHUNK_SIZE >= offlineData.size())
                 break;
             for (double &sample : samples)
                 sample = offlineData[offlineDataIndex++];
 
-            peakCounter.setFakeTimestamp((offlineDataIndex * 1000) / samplingRateHz);
+            peakCounter.setPinnedTimestampMs((offlineDataIndex * 1000) / samplingRateHz);
         }
 
         // apply filter in place
@@ -287,10 +287,21 @@ static bool run_spikedetect(
             tk.elapsed_last_stimulation = gld_time_diff(&tk.time_last_stimulation, &tk.time_now);
 
             if (tk.elapsed_last_stimulation.tv_nsec > tk.duration_refractory_period.tv_nsec
-                || tk.elapsed_last_stimulation.tv_sec > tk.duration_refractory_period.tv_sec) {
+                && tk.elapsed_last_stimulation.tv_sec > tk.duration_refractory_period.tv_sec) {
 
                 // stimulation time!!
                 clock_gettime(CLOCK_REALTIME, &tk.time_last_stimulation);
+
+                if (offlineDataFile == nullptr) {
+                    /* start the pulse */
+                    stimpulse_set_trigger_high();
+
+                    /* wait */
+                    nanosleep(&tk.duration_pulse, &tk.req);
+
+                    /* end of the pulse */
+                    stimpulse_set_trigger_low();
+                }
             }
         }
 
@@ -487,10 +498,9 @@ int main(int argc, char *argv[])
         /* initialize DAQ board */
         if (!gld_board_initialize())
             return 5;
-    }
 
-    if (opt_dat_filename == NULL)
         stimpulse_set_intensity(laser_intensity_volt);
+    }
 
     bool success = run_spikedetect(
         sampling_rate_hz,

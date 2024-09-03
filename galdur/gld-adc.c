@@ -484,7 +484,7 @@ gld_adc_get_sample (GldAdc *daq, guint channel, int16_t *data)
  * been added to the buffer.
  */
 void
-gld_adc_get_samples (GldAdc *daq, guint channel, int *samples, size_t samples_len)
+gld_adc_get_samples (GldAdc *daq, guint channel, int16_t *samples, size_t samples_len)
 {
     size_t sample_no = 0;
 

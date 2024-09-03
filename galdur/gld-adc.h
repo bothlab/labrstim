@@ -61,7 +61,7 @@ gboolean        gld_adc_get_sample (GldAdc *daq,
 
 void            gld_adc_get_samples (GldAdc *daq,
                                      guint channel,
-                                     int *samples,
+                                     int16_t *samples,
                                      size_t samples_len);
 void            gld_adc_get_samples_double (GldAdc *daq,
                                             guint channel,
