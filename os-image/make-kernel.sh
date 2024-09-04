@@ -4,7 +4,7 @@ set -e
 BASEDIR="$(realpath $(dirname "$0"))"
 cd $BASEDIR
 
-RT_PATCH_NAME=patch-6.6.43-rt38.patch
+RT_PATCH_NAME=patch-6.6.48-rt40.patch
 
 LINUX_ROOT_OVERLAY_DIR=$BASEDIR/overlays/linux-root
 FW_BOOT_OVERLAY_DIR=$BASEDIR/overlays/fw-boot

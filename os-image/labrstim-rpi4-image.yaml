@@ -38,6 +38,11 @@ actions:
       - nano
       - btop
 
+  - action: run
+    description: Switch journal to volatile mode
+    chroot: true
+    command: sed -i 's/^#\(Storage=\).*/\1volatile/' /etc/systemd/journald.conf
+
   - action: overlay
     description: Install kernel modules
     source: overlays/linux-root
