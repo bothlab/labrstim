@@ -209,12 +209,12 @@ static bool run_spikedetect(
 
     ls_debug("Start trial loop\n");
 
-    // create a FIR bandpass filter with 127 taps
-    kfr::univector<double, 127> taps127;
-    kfr::expression_handle<double> kaiser = kfr::to_handle(kfr::window_kaiser(taps127.size(), 3.0));
+    // create a FIR bandpass filter with 31 taps
+    kfr::univector<double, 31> taps31;
+    kfr::expression_handle<double> kaiser = kfr::to_handle(kfr::window_kaiser(taps31.size(), 3.0));
 
-    kfr::fir_bandpass(taps127, 700.0 / samplingRateHz, 5000.0 / samplingRateHz, kaiser, true);
-    kfr::filter_fir<double> filter(taps127);
+    kfr::fir_bandpass(taps31, 700.0 / samplingRateHz, 5000.0 / samplingRateHz, kaiser, true);
+    kfr::filter_fir<double> filter(taps31);
 
     SlidingWindowCounter peakCounter(timeWindowMsec);
     static const int CHUNK_SIZE = 3;
