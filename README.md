@@ -7,7 +7,7 @@ for the Raspberry Pi.
 
 The software is comprised of a server component, running on the Raspberry Pi, that
 communicates with the GALDUR board to sample analog data exported from electrophysiological
-recordings. The analog data in our tests came from an [Intan RHD USB Interface Boardh](ttps://intantech.com/RHD_USB_interface_board.html).
+recordings. The analog data in our tests came from an [Intan RHD USB Interface Board](ttps://intantech.com/RHD_USB_interface_board.html).
 
 The software currently has the following features:
 
@@ -15,7 +15,7 @@ The software currently has the following features:
   To do that, this project uses code used in Van De Ven et al. "Hippocampal Offline Reactivation Consolidates Recently Formed Cell Assembly Patterns during Sharp Wave-Ripples",
   [Neuron 92, 968–974 (2016)](https://doi.org/10.1016/j.neuron.2016.10.020). The original code is
   available on GitHub at [kevin-allen/laser_stimulation](https://github.com/kevin-allen/laser_stimulation)
-* Theta Stimulation: Stimulate on theta phases
+* Theta Stimulation: Stimulate on specified theta phase
 * Spikerate Stimulation: Stimulate when a specific spike frequency was detected
 * Train Stimulation: Perform random or train stimulation, without reading input signal data
 
